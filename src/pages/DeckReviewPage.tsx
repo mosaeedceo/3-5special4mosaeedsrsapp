@@ -192,9 +192,10 @@ export const DeckReviewPage = () => {
     effectiveFrontLang ||
     '';
 
-  // True when the deck has a target language configured — language-learning
-  // decks get a dedicated stacked-paper layout matching the design.
-  const isLangDeck = !!deckFrontLang;
+  // True when the deck has a target language configured (front OR back) —
+  // language-learning decks get a dedicated stacked-paper layout matching
+  // the design.
+  const isLangDeck = !!(deckFrontLang || deckBackLang);
 
   const speakSide = (side: 'front' | 'back' | 'example') => {
     if (!resolved) return;
@@ -699,29 +700,6 @@ export const DeckReviewPage = () => {
                     className="prose prose-sm dark:prose-invert max-w-none anki-card-content"
                     dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(resolved.front) }}
                   />
-                  {currentCard?.example && (
-                    <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-                      {effectiveExampleLang && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => speakSide('example')}
-                          className="h-6 w-6 shrink-0 -mt-0.5"
-                          aria-label={t('tts.speak')}
-                          title={t('tts.speak')}
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </Button>
-                      )}
-                      <span
-                        className="leading-snug"
-                        dangerouslySetInnerHTML={{
-                          __html: highlightExample(currentCard.example, resolved.front),
-                        }}
-                      />
-                    </div>
-                  )}
                   {resolved.audioFront.map((url, i) => (
                     <AudioPlayer key={`af-${i}`} url={url} autoPlay />
                   ))}
@@ -921,7 +899,21 @@ const highlightExample = (example: string, front: string): string => {
   const word = stripHtml(front);
   const safe = escapeHtml(example);
   if (!word) return safe;
-  const re = new RegExp(escapeRegExp(escapeHtml(word)), 'gi');
+  // Unicode-aware word boundaries: don't match inside larger words.
+  // Uses lookarounds against any letter/number in any script so that
+  // non-Latin languages (Arabic, Chinese, etc.) are handled correctly.
+  let re: RegExp;
+  try {
+    re = new RegExp(
+      `(?<![\\p{L}\\p{N}])${escapeRegExp(escapeHtml(word))}(?![\\p{L}\\p{N}])`,
+      'giu',
+    );
+  } catch {
+    // Fallback for engines without Unicode property escapes.
+    re = new RegExp(`\\b${escapeRegExp(escapeHtml(word))}\\b`, 'gi');
+  }
+  if (!re.test(safe)) return safe;
+  re.lastIndex = 0;
   return safe.replace(
     re,
     m => `<strong class="font-semibold text-amber-600 dark:text-amber-500">${m}</strong>`,
