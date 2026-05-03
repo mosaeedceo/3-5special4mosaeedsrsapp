@@ -11,26 +11,35 @@ export interface ScheduleDailyReminderParams {
   lang: Language;
 }
 
+// Pick the right plural form key. We use a small one/other rule (matching
+// the rules in our t() helper) so the notification body reads naturally,
+// e.g. "1 lesson due today" instead of "1 lesson(s) due today".
 const buildBody = (
   dueCount: ScheduleDailyReminderParams['dueCount'],
   lang: Language,
 ): string => {
   const tr = lang === 'ar' ? ar : en;
   const n = tr.notifications as Record<string, string>;
-  const fmt = (tpl: string, vars: Record<string, number>) =>
-    tpl.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
-  if (dueCount.total <= 0) return n.bodyAllCaughtUp || n.body;
-  if (dueCount.lessons > 0 && dueCount.cards > 0) {
-    return fmt(n.bodyDue || n.body, {
-      lessons: dueCount.lessons,
-      cards: dueCount.cards,
-      total: dueCount.total,
-    });
+  const fmt = (tpl: string | undefined, vars: Record<string, number>) =>
+    (tpl || n.body).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
+
+  const { lessons, cards, total } = dueCount;
+  if (total <= 0) return n.bodyAllCaughtUp || n.body;
+
+  if (lessons > 0 && cards > 0) {
+    if (lessons === 1 && cards === 1) return fmt(n.bodyDueOne, {});
+    if (lessons === 1) return fmt(n.bodyDueLessonsOneCardsOther, { cards });
+    if (cards === 1) return fmt(n.bodyDueLessonsOtherCardsOne, { lessons });
+    return fmt(n.bodyDueLessonsOtherCardsOther, { lessons, cards });
   }
-  if (dueCount.lessons > 0) {
-    return fmt(n.bodyDueLessonsOnly || n.body, { lessons: dueCount.lessons });
+  if (lessons > 0) {
+    return lessons === 1
+      ? fmt(n.bodyDueLessonsOne, {})
+      : fmt(n.bodyDueLessonsOther, { lessons });
   }
-  return fmt(n.bodyDueCardsOnly || n.body, { cards: dueCount.cards });
+  return cards === 1
+    ? fmt(n.bodyDueCardsOne, {})
+    : fmt(n.bodyDueCardsOther, { cards });
 };
 
 /**

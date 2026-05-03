@@ -131,11 +131,18 @@ const AppContent = () => {
   useEffect(() => {
     if (!isNativePlatform()) return;
     if (!data.settings.reminderEnabled || !data.settings.reminderTime) return;
-    scheduleDailyReminder({
-      time: data.settings.reminderTime,
-      dueCount: getTodayDueCount(),
-      lang: data.settings.language,
-    });
+    // Debounce so a burst of ratings (each one nudges dueTotal) doesn't
+    // trigger N back-to-back schedule calls. The OS-level scheduling cost
+    // is small but we'd rather coalesce them. The hidden/pagehide effect
+    // below still guarantees a fresh body when the user backgrounds.
+    const handle = window.setTimeout(() => {
+      scheduleDailyReminder({
+        time: data.settings.reminderTime!,
+        dueCount: getTodayDueCount(),
+        lang: data.settings.language,
+      });
+    }, 1000);
+    return () => window.clearTimeout(handle);
   }, [
     data.settings.reminderEnabled,
     data.settings.reminderTime,

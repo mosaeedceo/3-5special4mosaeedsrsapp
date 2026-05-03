@@ -131,3 +131,22 @@ export const processCardReview = (
 
   return { fsrsState, nextReviewDate };
 };
+
+/**
+ * Returns true if a card should be auto-suspended as a leech given its
+ * post-review FSRS state. Centralized here so any review path can apply
+ * the same rule.
+ *
+ * - threshold <= 0 disables the feature.
+ * - Cards already suspended are not re-flagged.
+ * - A card becomes a leech once its lapse count reaches the threshold.
+ */
+export const shouldAutoSuspendAsLeech = (
+  fsrsState: FSRSState,
+  alreadySuspended: boolean | undefined,
+  threshold: number,
+): boolean => {
+  if (!threshold || threshold <= 0) return false;
+  if (alreadySuspended) return false;
+  return fsrsState.lapses >= threshold;
+};

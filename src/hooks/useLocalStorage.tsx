@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, ReactNode } from 'react';
 import { AppData, Lesson, Settings, DEFAULT_SETTINGS, CategoryData, ActivityRecord, FSRSRating, Deck, Card } from '@/types/lesson';
-import { processCardReview } from '@/lib/cardFsrs';
+import { processCardReview, shouldAutoSuspendAsLeech } from '@/lib/cardFsrs';
 import { isNativePlatform } from '@/lib/platform';
 import { getData, saveData, getInitialDataSync } from '@/lib/storage';
 import { deleteLessonAttachments } from '@/lib/fileCleanup';
@@ -1320,14 +1320,10 @@ const useLocalStorageInternal = () => {
         stability: fsrsState.stability,
         difficulty: fsrsState.difficulty,
       };
-      // Auto-suspend leeches: once lapses reach the configured threshold,
-      // the card is suspended so it stops appearing in reviews until the
-      // user manually unsuspends it from the card manager.
+      // Auto-suspend leeches via the shared cardFsrs helper so any
+      // future review entry point applies the same rule.
       const threshold = prev.settings.leechThreshold ?? 0;
-      const shouldSuspend =
-        threshold > 0 &&
-        !card.suspended &&
-        fsrsState.lapses >= threshold;
+      const shouldSuspend = shouldAutoSuspendAsLeech(fsrsState, card.suspended, threshold);
       if (shouldSuspend) leechSuspended = true;
       const updatedCard: Card = {
         ...card,
