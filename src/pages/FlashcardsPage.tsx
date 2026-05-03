@@ -245,6 +245,8 @@ export const FlashcardsPage = () => {
     tags: string[];
     ttsLangFront?: string;
     ttsLangBack?: string;
+    example?: string;
+    ttsLangExample?: string;
   }) => {
     if (!addCardTargetDeckId) return;
     const now = new Date().toISOString();
@@ -256,6 +258,8 @@ export const FlashcardsPage = () => {
       tags: values.tags.length ? values.tags : undefined,
       ttsLangFront: values.ttsLangFront,
       ttsLangBack: values.ttsLangBack,
+      example: values.example,
+      ttsLangExample: values.ttsLangExample,
       dateAdded: now,
       nextReviewDate: now,
     };
@@ -297,6 +301,8 @@ export const FlashcardsPage = () => {
       tags: r.tags && r.tags.length ? r.tags : undefined,
       ttsLangFront: r.langFront,
       ttsLangBack: r.langBack,
+      example: r.example,
+      ttsLangExample: r.langExample,
       dateAdded: now,
       nextReviewDate: now,
     }));

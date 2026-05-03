@@ -37,6 +37,8 @@ interface CardEditorDialogProps {
     tags: string[];
     ttsLangFront?: string;
     ttsLangBack?: string;
+    example?: string;
+    ttsLangExample?: string;
   }) => void;
 }
 
@@ -63,6 +65,8 @@ export const CardEditorDialog = ({
   const [tags, setTags] = useState('');
   const [langFront, setLangFront] = useState('');
   const [langBack, setLangBack] = useState('');
+  const [example, setExample] = useState('');
+  const [langExample, setLangExample] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -71,12 +75,16 @@ export const CardEditorDialog = ({
       setTags(tagsToString(initialCard?.tags));
       setLangFront(initialCard?.ttsLangFront ?? '');
       setLangBack(initialCard?.ttsLangBack ?? '');
+      setExample(initialCard?.example ?? '');
+      setLangExample(initialCard?.ttsLangExample ?? '');
     }
   }, [open, initialCard]);
 
   const trimmedFront = front.trim();
   const trimmedBack = back.trim();
   const canSave = trimmedFront.length > 0 && trimmedBack.length > 0;
+
+  const trimmedExample = example.trim();
 
   const handleSubmit = () => {
     if (!canSave) return;
@@ -86,6 +94,8 @@ export const CardEditorDialog = ({
       tags: parseTags(tags),
       ttsLangFront: langFront || undefined,
       ttsLangBack: langBack || undefined,
+      example: trimmedExample || undefined,
+      ttsLangExample: trimmedExample ? (langExample || undefined) : undefined,
     });
     onOpenChange(false);
   };
@@ -97,6 +107,10 @@ export const CardEditorDialog = ({
   const detectBack = () => {
     const d = detectLanguage(back);
     if (d) setLangBack(d);
+  };
+  const detectExample = () => {
+    const d = detectLanguage(example);
+    if (d) setLangExample(d);
   };
 
   const renderLangSelect = (
@@ -189,6 +203,34 @@ export const CardEditorDialog = ({
                 className="h-8 w-8 shrink-0"
                 onClick={detectBack}
                 disabled={!trimmedBack}
+                aria-label={t('flashcards.cardLangDetect')}
+                title={t('flashcards.cardLangDetect')}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="card-example">{t('flashcards.exampleLabel')}</Label>
+            <Textarea
+              id="card-example"
+              value={example}
+              onChange={e => setExample(e.target.value)}
+              placeholder={t('flashcards.examplePlaceholder')}
+              rows={2}
+            />
+            <div className="flex items-center gap-2">
+              <Label className="text-[11px] text-muted-foreground shrink-0">
+                {t('flashcards.cardLangLabel')}
+              </Label>
+              {renderLangSelect(langExample, setLangExample)}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={detectExample}
+                disabled={!trimmedExample}
                 aria-label={t('flashcards.cardLangDetect')}
                 title={t('flashcards.cardLangDetect')}
               >

@@ -106,6 +106,8 @@ export const parseTextOrCsv = async (
     tags: r.tags,
     ttsLangFront: r.langFront,
     ttsLangBack: r.langBack,
+    example: r.example,
+    ttsLangExample: r.langExample,
     dateAdded: now,
     nextReviewDate: now,
   }));

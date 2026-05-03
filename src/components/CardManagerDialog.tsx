@@ -169,6 +169,8 @@ export const CardManagerDialog = ({
     tags: string[];
     ttsLangFront?: string;
     ttsLangBack?: string;
+    example?: string;
+    ttsLangExample?: string;
   }) => {
     if (editorMode === 'create') {
       const now = new Date().toISOString();
@@ -180,6 +182,8 @@ export const CardManagerDialog = ({
         tags: values.tags.length ? values.tags : undefined,
         ttsLangFront: values.ttsLangFront,
         ttsLangBack: values.ttsLangBack,
+        example: values.example,
+        ttsLangExample: values.ttsLangExample,
         dateAdded: now,
         nextReviewDate: now,
       };
@@ -192,6 +196,8 @@ export const CardManagerDialog = ({
         tags: values.tags.length ? values.tags : undefined,
         ttsLangFront: values.ttsLangFront,
         ttsLangBack: values.ttsLangBack,
+        example: values.example,
+        ttsLangExample: values.ttsLangExample,
       });
       toast({ title: t('flashcards.cardUpdated') });
     }
@@ -230,6 +236,8 @@ export const CardManagerDialog = ({
       tags: r.tags && r.tags.length ? r.tags : undefined,
       ttsLangFront: r.langFront,
       ttsLangBack: r.langBack,
+      example: r.example,
+      ttsLangExample: r.langExample,
       dateAdded: now,
       nextReviewDate: now,
     }));
@@ -362,6 +370,16 @@ export const CardManagerDialog = ({
                               )}
                               dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(card.back) }}
                             />
+                            {card.example && (
+                              <div
+                                className={cn(
+                                  'text-[11px] text-muted-foreground/80 italic line-clamp-2 mt-1',
+                                  card.suspended && 'opacity-60',
+                                )}
+                              >
+                                {card.example}
+                              </div>
+                            )}
                             <div className={cn('flex flex-wrap gap-1 mt-1.5', isRTL && 'justify-end')}>
                               {card.suspended && (
                                 <Badge

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Sparkles, Volume2, RotateCcw, Brain, Zap, Plus, Pencil, Trash2, MoreVertical, Square } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Volume2, RotateCcw, Brain, Zap, Plus, Pencil, Trash2, MoreVertical, Square, BookOpen } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -184,17 +184,45 @@ export const DeckReviewPage = () => {
     (resolved ? detectLanguage(resolved.back) : null) ||
     deckBackLang ||
     '';
+  // Example uses its own override → auto-detect → fall back to the front
+  // language (examples are usually in the target/front language).
+  const effectiveExampleLang =
+    currentCard?.ttsLangExample ||
+    (currentCard?.example ? detectLanguage(currentCard.example) : null) ||
+    effectiveFrontLang ||
+    '';
 
-  const speakSide = (side: 'front' | 'back') => {
+  // True when the deck has a target language configured — language-learning
+  // decks get a dedicated stacked-paper layout matching the design.
+  const isLangDeck = !!deckFrontLang;
+
+  const speakSide = (side: 'front' | 'back' | 'example') => {
     if (!resolved) return;
-    const lang = side === 'front' ? effectiveFrontLang : effectiveBackLang;
+    const lang =
+      side === 'front'
+        ? effectiveFrontLang
+        : side === 'back'
+          ? effectiveBackLang
+          : effectiveExampleLang;
     if (!lang) return;
-    const deckLang = side === 'front' ? deckFrontLang : deckBackLang;
-    const deckVoice = side === 'front' ? deck?.ttsFrontVoiceURI : deck?.ttsBackVoiceURI;
+    const deckLang =
+      side === 'front' ? deckFrontLang : side === 'back' ? deckBackLang : deckFrontLang;
+    const deckVoice =
+      side === 'front'
+        ? deck?.ttsFrontVoiceURI
+        : side === 'back'
+          ? deck?.ttsBackVoiceURI
+          : deck?.ttsFrontVoiceURI;
     // Only reuse the deck-configured voice if the resolved language matches
     // what the deck voice was picked for; otherwise let the platform default.
     const voiceURI = lang === deckLang ? deckVoice : undefined;
-    const text = side === 'front' ? resolved.front : resolved.back;
+    const text =
+      side === 'front'
+        ? resolved.front
+        : side === 'back'
+          ? resolved.back
+          : (currentCard?.example ?? '');
+    if (!text) return;
     ttsSpeak({
       text,
       lang,
@@ -445,6 +473,8 @@ export const DeckReviewPage = () => {
     tags: string[];
     ttsLangFront?: string;
     ttsLangBack?: string;
+    example?: string;
+    ttsLangExample?: string;
   }) => {
     if (!deckId) return;
     const now = new Date().toISOString();
@@ -456,6 +486,8 @@ export const DeckReviewPage = () => {
       tags: values.tags.length ? values.tags : undefined,
       ttsLangFront: values.ttsLangFront,
       ttsLangBack: values.ttsLangBack,
+      example: values.example,
+      ttsLangExample: values.ttsLangExample,
       dateAdded: now,
       nextReviewDate: now,
     };
@@ -469,6 +501,8 @@ export const DeckReviewPage = () => {
     tags: string[];
     ttsLangFront?: string;
     ttsLangBack?: string;
+    example?: string;
+    ttsLangExample?: string;
   }) => {
     if (!currentCard) return;
     updateCard(currentCard.id, {
@@ -477,6 +511,8 @@ export const DeckReviewPage = () => {
       tags: values.tags.length ? values.tags : undefined,
       ttsLangFront: values.ttsLangFront,
       ttsLangBack: values.ttsLangBack,
+      example: values.example,
+      ttsLangExample: values.ttsLangExample,
     });
     toast({ title: t('flashcards.cardUpdated') });
   };
@@ -602,96 +638,142 @@ export const DeckReviewPage = () => {
           </Card>
         ) : (
           <>
-            <Card className="overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="outline" className="text-[10px]">
-                    {t('flashcards.front')}
-                  </Badge>
-                  {effectiveFrontLang && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => speakSide('front')}
-                        className="h-7 w-7"
-                        aria-label={speaking ? t('tts.replay') : t('tts.speak')}
-                        title={speaking ? t('tts.replay') : t('tts.speak')}
-                      >
-                        <Volume2 className="w-4 h-4" />
-                      </Button>
-                      {speaking && (
+            {isLangDeck ? (
+              <LanguageDeckCard
+                front={resolved.front}
+                back={resolved.back}
+                example={currentCard?.example}
+                showAnswer={showAnswer}
+                speaking={speaking}
+                showFrontSpeaker={!!effectiveFrontLang}
+                showBackSpeaker={!!effectiveBackLang}
+                showExampleSpeaker={!!effectiveExampleLang && !!currentCard?.example}
+                onSpeakFront={() => speakSide('front')}
+                onSpeakBack={() => speakSide('back')}
+                onSpeakExample={() => speakSide('example')}
+                onStop={ttsCancel}
+                onEdit={() => setEditCardOpen(true)}
+                speakLabel={t('tts.speak')}
+                stopLabel={t('tts.stop')}
+                editLabel={t('flashcards.editCard')}
+                audioFront={resolved.audioFront}
+                audioBack={resolved.audioBack}
+              />
+            ) : (
+              <Card className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <Badge variant="outline" className="text-[10px]">
+                      {t('flashcards.front')}
+                    </Badge>
+                    {effectiveFrontLang && (
+                      <div className="flex items-center gap-1">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={ttsCancel}
-                          className="h-7 w-7 text-danger hover:text-danger"
-                          aria-label={t('tts.stop')}
-                          title={t('tts.stop')}
+                          onClick={() => speakSide('front')}
+                          className="h-7 w-7"
+                          aria-label={speaking ? t('tts.replay') : t('tts.speak')}
+                          title={speaking ? t('tts.replay') : t('tts.speak')}
                         >
-                          <Square className="w-3.5 h-3.5 fill-current" />
+                          <Volume2 className="w-4 h-4" />
                         </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="prose prose-sm dark:prose-invert max-w-none anki-card-content"
-                  dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(resolved.front) }}
-                />
-                {resolved.audioFront.map((url, i) => (
-                  <AudioPlayer key={`af-${i}`} url={url} autoPlay />
-                ))}
-
-                {showAnswer && (
-                  <>
-                    <div className="my-4 border-t border-dashed" />
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge variant="outline" className="text-[10px] border-success/40 text-success">
-                        {t('flashcards.back')}
-                      </Badge>
-                      {effectiveBackLang && (
-                        <div className="flex items-center gap-1">
+                        {speaking && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => speakSide('back')}
-                            className="h-7 w-7"
-                            aria-label={speaking ? t('tts.replay') : t('tts.speak')}
-                            title={speaking ? t('tts.replay') : t('tts.speak')}
+                            onClick={ttsCancel}
+                            className="h-7 w-7 text-danger hover:text-danger"
+                            aria-label={t('tts.stop')}
+                            title={t('tts.stop')}
                           >
-                            <Volume2 className="w-4 h-4" />
+                            <Square className="w-3.5 h-3.5 fill-current" />
                           </Button>
-                          {speaking && (
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none anki-card-content"
+                    dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(resolved.front) }}
+                  />
+                  {currentCard?.example && (
+                    <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                      {effectiveExampleLang && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => speakSide('example')}
+                          className="h-6 w-6 shrink-0 -mt-0.5"
+                          aria-label={t('tts.speak')}
+                          title={t('tts.speak')}
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                      <span
+                        className="leading-snug"
+                        dangerouslySetInnerHTML={{
+                          __html: highlightExample(currentCard.example, resolved.front),
+                        }}
+                      />
+                    </div>
+                  )}
+                  {resolved.audioFront.map((url, i) => (
+                    <AudioPlayer key={`af-${i}`} url={url} autoPlay />
+                  ))}
+
+                  {showAnswer && (
+                    <>
+                      <div className="my-4 border-t border-dashed" />
+                      <div className="flex items-center justify-between mb-3">
+                        <Badge variant="outline" className="text-[10px] border-success/40 text-success">
+                          {t('flashcards.back')}
+                        </Badge>
+                        {effectiveBackLang && (
+                          <div className="flex items-center gap-1">
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={ttsCancel}
-                              className="h-7 w-7 text-danger hover:text-danger"
-                              aria-label={t('tts.stop')}
-                              title={t('tts.stop')}
+                              onClick={() => speakSide('back')}
+                              className="h-7 w-7"
+                              aria-label={speaking ? t('tts.replay') : t('tts.speak')}
+                              title={speaking ? t('tts.replay') : t('tts.speak')}
                             >
-                              <Square className="w-3.5 h-3.5 fill-current" />
+                              <Volume2 className="w-4 h-4" />
                             </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="prose prose-sm dark:prose-invert max-w-none anki-card-content"
-                      dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(resolved.back) }}
-                    />
-                    {resolved.audioBack.map((url, i) => (
-                      <AudioPlayer key={`ab-${i}`} url={url} />
-                    ))}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                            {speaking && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={ttsCancel}
+                                className="h-7 w-7 text-danger hover:text-danger"
+                                aria-label={t('tts.stop')}
+                                title={t('tts.stop')}
+                              >
+                                <Square className="w-3.5 h-3.5 fill-current" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className="prose prose-sm dark:prose-invert max-w-none anki-card-content"
+                        dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(resolved.back) }}
+                      />
+                      {resolved.audioBack.map((url, i) => (
+                        <AudioPlayer key={`ab-${i}`} url={url} />
+                      ))}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {leechHint && (
               <div
@@ -813,6 +895,231 @@ export const DeckReviewPage = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Language-deck card (matches the "stacked-paper" mockup design)
+// ---------------------------------------------------------------------------
+
+const escapeHtml = (s: string): string =>
+  s.replace(/[&<>"']/g, c =>
+    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;',
+  );
+
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Strip HTML tags so we can match the front word inside the example as plain text. */
+const stripHtml = (s: string): string => s.replace(/<[^>]+>/g, '').trim();
+
+/**
+ * Highlight every occurrence of the front word(s) inside the example sentence.
+ * Renders the rest of the sentence as plain (escaped) text and the matched
+ * substring(s) as bold + amber, mirroring the design mockup.
+ */
+const highlightExample = (example: string, front: string): string => {
+  const word = stripHtml(front);
+  const safe = escapeHtml(example);
+  if (!word) return safe;
+  const re = new RegExp(escapeRegExp(escapeHtml(word)), 'gi');
+  return safe.replace(
+    re,
+    m => `<strong class="font-semibold text-amber-600 dark:text-amber-500">${m}</strong>`,
+  );
+};
+
+/**
+ * Render the front word with its first token coloured (e.g. the article
+ * "die" in pink) and the remainder in the default colour.
+ */
+const renderHeadword = (front: string) => {
+  const txt = stripHtml(front);
+  const idx = txt.search(/\s/);
+  if (idx <= 0) {
+    return <span className="text-rose-400 dark:text-rose-300">{txt}</span>;
+  }
+  return (
+    <>
+      <span className="text-rose-400 dark:text-rose-300">{txt.slice(0, idx)}</span>
+      <span> {txt.slice(idx + 1)}</span>
+    </>
+  );
+};
+
+interface LanguageDeckCardProps {
+  front: string;
+  back: string;
+  example?: string;
+  showAnswer: boolean;
+  speaking: boolean;
+  showFrontSpeaker: boolean;
+  showBackSpeaker: boolean;
+  showExampleSpeaker: boolean;
+  onSpeakFront: () => void;
+  onSpeakBack: () => void;
+  onSpeakExample: () => void;
+  onStop: () => void;
+  onEdit: () => void;
+  speakLabel: string;
+  stopLabel: string;
+  editLabel: string;
+  audioFront: string[];
+  audioBack: string[];
+}
+
+const StackedPaper = ({ children }: { children: React.ReactNode }) => (
+  <div className="relative mx-auto w-full max-w-md">
+    {/* Two paper layers behind the main card */}
+    <div
+      className="absolute inset-0 rounded-2xl bg-card border border-border shadow-sm"
+      style={{ transform: 'translate(8px, 8px) rotate(0.6deg)' }}
+      aria-hidden="true"
+    />
+    <div
+      className="absolute inset-0 rounded-2xl bg-card border border-border shadow-sm"
+      style={{ transform: 'translate(4px, 4px) rotate(-0.4deg)' }}
+      aria-hidden="true"
+    />
+    <div className="relative rounded-2xl bg-card border border-border shadow-md">
+      {children}
+    </div>
+  </div>
+);
+
+const LanguageDeckCard = ({
+  front,
+  back,
+  example,
+  showAnswer,
+  speaking,
+  showFrontSpeaker,
+  showBackSpeaker,
+  showExampleSpeaker,
+  onSpeakFront,
+  onSpeakBack,
+  onSpeakExample,
+  onStop,
+  onEdit,
+  speakLabel,
+  stopLabel,
+  editLabel,
+  audioFront,
+  audioBack,
+}: LanguageDeckCardProps) => {
+  return (
+    <StackedPaper>
+      <div className="min-h-[360px] sm:min-h-[420px] px-6 py-8 flex flex-col items-center justify-center text-center">
+        {showAnswer ? (
+          // ---------- BACK ----------
+          <>
+            <div className="mb-5">
+              <BookOpen className="w-16 h-16 text-orange-500" strokeWidth={1.6} />
+            </div>
+            <div className="flex items-center gap-2 text-base">
+              {showFrontSpeaker && (
+                <button
+                  type="button"
+                  onClick={onSpeakFront}
+                  className="text-sky-400 hover:text-sky-500 transition-colors"
+                  aria-label={speakLabel}
+                  title={speakLabel}
+                >
+                  <Volume2 className="w-4 h-4" />
+                </button>
+              )}
+              <span className="font-medium">{renderHeadword(front)}</span>
+            </div>
+            <div
+              className="mt-2 text-2xl font-semibold anki-card-content"
+              dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(back) }}
+            />
+            {audioBack.map((url, i) => (
+              <AudioPlayer key={`ab-${i}`} url={url} />
+            ))}
+            {example && (
+              <>
+                <div className="my-5 w-3/4 border-t border-dashed border-border" />
+                <div className="flex items-start justify-center gap-2 text-sm text-muted-foreground max-w-sm">
+                  {showExampleSpeaker && (
+                    <button
+                      type="button"
+                      onClick={onSpeakExample}
+                      className="text-sky-400 hover:text-sky-500 transition-colors mt-0.5 shrink-0"
+                      aria-label={speakLabel}
+                      title={speakLabel}
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  <span
+                    className="leading-snug"
+                    dangerouslySetInnerHTML={{ __html: highlightExample(example, front) }}
+                  />
+                </div>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={onEdit}
+              className="mt-6 text-sky-400 hover:text-sky-500 transition-colors p-2"
+              aria-label={editLabel}
+              title={editLabel}
+            >
+              <Pencil className="w-5 h-5" />
+            </button>
+            {speaking && (
+              <button
+                type="button"
+                onClick={onStop}
+                className="mt-2 text-danger inline-flex items-center gap-1 text-xs"
+                aria-label={stopLabel}
+                title={stopLabel}
+              >
+                <Square className="w-3 h-3 fill-current" /> {stopLabel}
+              </button>
+            )}
+          </>
+        ) : (
+          // ---------- FRONT ----------
+          <>
+            <div className="flex items-center gap-3 text-2xl sm:text-3xl">
+              {showFrontSpeaker && (
+                <button
+                  type="button"
+                  onClick={onSpeakFront}
+                  className="text-sky-400 hover:text-sky-500 transition-colors"
+                  aria-label={speakLabel}
+                  title={speakLabel}
+                >
+                  <Volume2 className="w-6 h-6" />
+                </button>
+              )}
+              <span className="font-medium">{renderHeadword(front)}</span>
+            </div>
+            {audioFront.map((url, i) => (
+              <AudioPlayer key={`af-${i}`} url={url} autoPlay />
+            ))}
+            {example && (
+              <p
+                className="mt-4 text-sm text-muted-foreground max-w-sm leading-snug"
+                dangerouslySetInnerHTML={{ __html: highlightExample(example, front) }}
+              />
+            )}
+            {speaking && (
+              <button
+                type="button"
+                onClick={onStop}
+                className="mt-3 text-danger inline-flex items-center gap-1 text-xs"
+                aria-label={stopLabel}
+                title={stopLabel}
+              >
+                <Square className="w-3 h-3 fill-current" /> {stopLabel}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </StackedPaper>
   );
 };
 

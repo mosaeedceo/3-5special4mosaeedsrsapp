@@ -143,6 +143,10 @@ export interface Card {
   // When set, takes precedence over auto-detection and the deck default.
   ttsLangFront?: string;
   ttsLangBack?: string;
+  // Optional per-card example sentence shown beneath the front/back content.
+  // Useful for language decks (target word + example sentence).
+  example?: string;
+  ttsLangExample?: string;
 }
 
 export type EasyDayLevel = 'min' | 'reduced' | 'normal';

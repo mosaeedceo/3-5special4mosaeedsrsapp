@@ -64,6 +64,8 @@ export const ar: TranslationKeys = {
     backPlaceholder: 'الإجابة أو التفسير',
     tagsLabel: 'الوسوم (اختياري)',
     tagsPlaceholder: 'مثال: تشريح أحياء',
+    exampleLabel: 'مثال (اختياري)',
+    examplePlaceholder: 'مثال: لقد قدمت الطلب عبر الإنترنت.',
     cardLangLabel: 'الصوت',
     cardLangAuto: 'كشف تلقائي',
     cardLangDetect: 'كشف من النص',

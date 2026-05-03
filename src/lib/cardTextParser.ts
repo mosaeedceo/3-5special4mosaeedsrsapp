@@ -45,7 +45,15 @@ export const detectSeparator = (sample: string): '\t' | ',' => {
 };
 
 /** Header column names that map to known card fields. */
-const HEADER_FIELD_MAP: Record<string, 'front' | 'back' | 'tags' | 'langFront' | 'langBack' | 'lang'> = {
+const HEADER_FIELD_MAP: Record<string, 'front' | 'back' | 'tags' | 'langFront' | 'langBack' | 'lang' | 'example' | 'langExample'> = {
+  example: 'example',
+  sentence: 'example',
+  sample: 'example',
+  context: 'example',
+  langexample: 'langExample',
+  examplelang: 'langExample',
+  lang_example: 'langExample',
+  'lang-example': 'langExample',
   front: 'front',
   question: 'front',
   term: 'front',
@@ -117,6 +125,8 @@ export interface ParsedTextRow {
   tags?: string[];
   langFront?: string;
   langBack?: string;
+  example?: string;
+  langExample?: string;
 }
 
 /**
@@ -145,15 +155,19 @@ interface ColumnMap {
   tags: number;
   langFront: number;
   langBack: number;
+  example: number;
+  langExample: number;
 }
 
-/** Default positional layout: front, back, tags, langFront, langBack. */
+/** Default positional layout: front, back, tags, langFront, langBack, example, langExample. */
 const DEFAULT_COLUMN_MAP: ColumnMap = {
   front: 0,
   back: 1,
   tags: 2,
   langFront: 3,
   langBack: 4,
+  example: 5,
+  langExample: 6,
 };
 
 /**
@@ -161,7 +175,7 @@ const DEFAULT_COLUMN_MAP: ColumnMap = {
  * if the header doesn't include both a front and back column.
  */
 const buildColumnMap = (header: string[]): ColumnMap | null => {
-  const map: ColumnMap = { front: -1, back: -1, tags: -1, langFront: -1, langBack: -1 };
+  const map: ColumnMap = { front: -1, back: -1, tags: -1, langFront: -1, langBack: -1, example: -1, langExample: -1 };
   header.forEach((rawName, idx) => {
     const role = HEADER_FIELD_MAP[(rawName || '').trim().toLowerCase()];
     if (!role) return;
@@ -233,8 +247,12 @@ export const parseCardText = (
     const langBackRaw = pickCell(parts, columnMap.langBack);
     const langFront = langFrontRaw || undefined;
     const langBack = langBackRaw || undefined;
+    const exampleRaw = pickCell(parts, columnMap.example);
+    const langExampleRaw = pickCell(parts, columnMap.langExample);
+    const example = exampleRaw || undefined;
+    const langExample = langExampleRaw || undefined;
 
-    rows.push({ front, back, tags, langFront, langBack });
+    rows.push({ front, back, tags, langFront, langBack, example, langExample });
   }
 
   return rows;

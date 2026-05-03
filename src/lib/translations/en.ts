@@ -62,6 +62,8 @@ export const en = {
     backPlaceholder: 'Answer or explanation',
     tagsLabel: 'Tags (optional)',
     tagsPlaceholder: 'e.g. anatomy biology',
+    exampleLabel: 'Example (optional)',
+    examplePlaceholder: 'e.g. Ich habe die Bestellung online aufgegeben.',
     cardLangLabel: 'Voice',
     cardLangAuto: 'Auto-detect',
     cardLangDetect: 'Detect from text',
