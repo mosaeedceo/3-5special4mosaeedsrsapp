@@ -126,13 +126,19 @@ export const CardManagerDialog = ({
   }, [open, focusCardId, initialStatusFilter, deckId, deckCards]);
 
   // If a focus card lands in a filter that hides it, switch to All so it
-  // becomes visible.
+  // becomes visible. Also clear lastFocusedRef so the focus-scroll effect
+  // re-runs against the now-visible deckCards list and centers the row.
   useEffect(() => {
     if (!focusCardId) return;
     const target = allDeckCards.find(c => c.id === focusCardId);
     if (!target) return;
-    if (statusFilter === 'active' && target.suspended) setStatusFilter('all');
-    if (statusFilter === 'suspended' && !target.suspended) setStatusFilter('all');
+    if (
+      (statusFilter === 'active' && target.suspended) ||
+      (statusFilter === 'suspended' && !target.suspended)
+    ) {
+      lastFocusedRef.current = null;
+      setStatusFilter('all');
+    }
     // We only want to reconcile once per focus change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusCardId, allDeckCards]);
