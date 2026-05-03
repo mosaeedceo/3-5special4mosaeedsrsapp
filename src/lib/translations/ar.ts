@@ -142,6 +142,28 @@ export const ar: TranslationKeys = {
     installPromptDesc: 'تحاول هذه الرزمة قراءة البطاقات بصوتٍ عالٍ، لكن بيانات الصوت اللازمة غير متوفرة على هذا الجهاز.',
     installPromptCta: 'تثبيت الأصوات',
     installPromptDismiss: 'ليس الآن',
+    stop: 'إيقاف',
+    replay: 'إعادة',
+  },
+
+  // Deck review (keyboard, exit, hints)
+  review: {
+    exit: 'خروج',
+    exitConfirmTitle: 'هل تريد الخروج من المراجعة؟',
+    exitConfirmDesc: 'تم حفظ تقدمك على البطاقات التي قيّمتها. البطاقات التي لم تقيّمها بعد ستظهر مرة أخرى في المرة القادمة.',
+    exitConfirm: 'خروج',
+    stay: 'متابعة المراجعة',
+    shortcutsHint: 'نصيحة: اضغط مسافة لقلب البطاقة، 1–4 للتقييم، R لإعادة النطق، Esc للخروج.',
+  },
+
+  // Accessibility labels for icon-only buttons
+  a11y: {
+    cardMenu: 'إجراءات البطاقة',
+    deckMenu: 'إجراءات الرزمة',
+    deleteLesson: 'حذف الدرس',
+    duplicateLesson: 'تكرار الدرس',
+    snoozeLesson: 'تأجيل الدرس',
+    startReview: 'بدء المراجعة',
   },
 
   // Home page

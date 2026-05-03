@@ -378,7 +378,12 @@ export const FlashcardsPage = () => {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          aria-label={t('a11y.deckMenu')}
+                        >
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -419,6 +424,7 @@ export const FlashcardsPage = () => {
                     variant={s.due > 0 || s.isNew > 0 ? 'default' : 'outline'}
                     disabled={s.total === 0}
                     onClick={() => navigate(`/flashcards/${deck.id}/review`)}
+                    aria-label={t('a11y.startReview')}
                   >
                     <Play className="w-4 h-4 mr-1.5" />
                     {t('flashcards.review')}

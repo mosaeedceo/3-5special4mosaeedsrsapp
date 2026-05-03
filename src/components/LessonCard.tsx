@@ -332,6 +332,7 @@ export const LessonCard = memo(({
                   variant="ghost"
                   className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                   onClick={handleDuplicate}
+                  aria-label={t('a11y.duplicateLesson')}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -346,6 +347,7 @@ export const LessonCard = memo(({
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      aria-label={t('a11y.snoozeLesson')}
                     >
                       <Moon className="w-4 h-4" />
                     </Button>
@@ -358,6 +360,7 @@ export const LessonCard = memo(({
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 text-muted-foreground hover:bg-danger/10 hover:text-danger"
+                    aria-label={t('a11y.deleteLesson')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

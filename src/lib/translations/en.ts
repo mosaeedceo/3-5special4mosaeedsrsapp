@@ -140,6 +140,28 @@ export const en = {
     installPromptDesc: 'This deck wants to read cards aloud, but the required voice data is missing on this device.',
     installPromptCta: 'Install voices',
     installPromptDismiss: 'Not now',
+    stop: 'Stop',
+    replay: 'Replay',
+  },
+
+  // Deck review (keyboard, exit, hints)
+  review: {
+    exit: 'Exit',
+    exitConfirmTitle: 'Leave this review?',
+    exitConfirmDesc: 'Your progress on rated cards is saved. Cards you haven\'t rated yet will reappear next time.',
+    exitConfirm: 'Leave',
+    stay: 'Keep reviewing',
+    shortcutsHint: 'Tip: press Space to flip the card, 1–4 to rate, R to replay, Esc to exit.',
+  },
+
+  // Accessibility labels for icon-only buttons
+  a11y: {
+    cardMenu: 'Card actions',
+    deckMenu: 'Deck actions',
+    deleteLesson: 'Delete lesson',
+    duplicateLesson: 'Duplicate lesson',
+    snoozeLesson: 'Snooze lesson',
+    startReview: 'Start review',
   },
 
   // Home page

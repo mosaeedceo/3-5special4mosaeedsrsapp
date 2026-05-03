@@ -43,6 +43,32 @@ const clampRate = (r?: number): number => {
   return Math.max(0.5, Math.min(1.5, n));
 };
 
+// ---------- Speaking-state tracking (cross-platform) ----------
+
+type SpeakingListener = (speaking: boolean) => void;
+const speakingListeners = new Set<SpeakingListener>();
+let speakingState = false;
+
+const setSpeakingState = (v: boolean): void => {
+  if (speakingState === v) return;
+  speakingState = v;
+  speakingListeners.forEach(l => {
+    try { l(v); } catch { /* ignore */ }
+  });
+};
+
+/** Returns true while a TTS utterance is actively playing. */
+export const isSpeaking = (): boolean => speakingState;
+
+/**
+ * Subscribe to speaking-state changes. Returns an unsubscribe function.
+ * Listeners are invoked synchronously when the state changes.
+ */
+export const subscribeSpeaking = (cb: SpeakingListener): (() => void) => {
+  speakingListeners.add(cb);
+  return () => { speakingListeners.delete(cb); };
+};
+
 // ---------- Web implementation ----------
 
 const webGetVoices = (): Promise<TTSVoice[]> => {
@@ -85,6 +111,7 @@ const webSpeak = (opts: SpeakOptions): void => {
   if (!text) return;
   const synth = window.speechSynthesis;
   synth.cancel();
+  setSpeakingState(false);
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = opts.lang;
   utter.rate = clampRate(opts.rate);
@@ -92,12 +119,16 @@ const webSpeak = (opts: SpeakOptions): void => {
     const match = synth.getVoices().find(v => v.voiceURI === opts.voiceURI);
     if (match) utter.voice = match;
   }
+  utter.onstart = () => setSpeakingState(true);
+  utter.onend = () => setSpeakingState(false);
+  utter.onerror = () => setSpeakingState(false);
   synth.speak(utter);
 };
 
 const webCancel = (): void => {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
+  setSpeakingState(false);
 };
 
 // ---------- Native (Capacitor) implementation ----------
@@ -140,11 +171,13 @@ const nativeSpeak = async (opts: SpeakOptions): Promise<void> => {
   const text = stripHtmlForSpeech(opts.text);
   if (!text) return;
   try { await tts.stop(); } catch { /* ignore */ }
+  setSpeakingState(false);
   try {
     const voices: any[] = (await tts.getSupportedVoices())?.voices || [];
     const idx = opts.voiceURI
       ? voices.findIndex(v => v.voiceURI === opts.voiceURI)
       : -1;
+    setSpeakingState(true);
     await tts.speak({
       text,
       lang: opts.lang,
@@ -156,6 +189,8 @@ const nativeSpeak = async (opts: SpeakOptions): Promise<void> => {
     });
   } catch (err) {
     console.warn('[tts] native speak failed', err);
+  } finally {
+    setSpeakingState(false);
   }
 };
 
@@ -163,6 +198,7 @@ const nativeCancel = async (): Promise<void> => {
   const tts = await loadNative();
   if (!tts) { webCancel(); return; }
   try { await tts.stop(); } catch { /* ignore */ }
+  setSpeakingState(false);
 };
 
 // ---------- Public API ----------

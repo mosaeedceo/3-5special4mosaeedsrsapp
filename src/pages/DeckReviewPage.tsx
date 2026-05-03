@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Sparkles, Volume2, RotateCcw, Brain, Zap, Plus, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Volume2, RotateCcw, Brain, Zap, Plus, Pencil, Trash2, MoreVertical, Square } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -27,7 +27,7 @@ import {
 import { resolveCardMedia, sanitizeCardHtml } from '@/lib/cardMedia';
 import { getCardReviewOptions } from '@/lib/cardFsrs';
 import { FSRSRating, Card as FlashCard } from '@/types/lesson';
-import { speak as ttsSpeak, cancel as ttsCancel } from '@/lib/tts';
+import { speak as ttsSpeak, cancel as ttsCancel, subscribeSpeaking } from '@/lib/tts';
 import { detectLanguage } from '@/lib/langDetect';
 import { cn } from '@/lib/utils';
 import { CardEditorDialog } from '@/components/CardEditorDialog';
@@ -59,6 +59,8 @@ export const DeckReviewPage = () => {
   const [editCardOpen, setEditCardOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [installVoicesOpen, setInstallVoicesOpen] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   const deck = (data.decks || []).find(d => d.id === deckId);
   const deckFrontLang = deck?.ttsFrontLang;
@@ -109,6 +111,12 @@ export const DeckReviewPage = () => {
   // Cancel TTS on unmount / route change
   useEffect(() => {
     return () => { ttsCancel(); };
+  }, []);
+
+  // Mirror the global TTS speaking-state into local state so Stop/Replay UI
+  // reflects reality on both web and native.
+  useEffect(() => {
+    return subscribeSpeaking(setSpeaking);
   }, []);
 
   // Effective per-card language: explicit card override → auto-detect from text
@@ -222,6 +230,105 @@ export const DeckReviewPage = () => {
 
   const sessionDone = !currentCard;
 
+  const handleExit = () => {
+    const midSession =
+      queue.length > 0 && position > 0 && position < queue.length;
+    if (midSession) {
+      setExitConfirmOpen(true);
+    } else {
+      navigate('/flashcards');
+    }
+  };
+
+  // Keyboard shortcuts: Space (flip), 1-4 (rate when answer shown),
+  // R (replay current side), Esc (exit). Disabled while any dialog is open
+  // or focus is in an editable element.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (
+        addCardOpen ||
+        editCardOpen ||
+        confirmDeleteOpen ||
+        installVoicesOpen ||
+        exitConfirmOpen
+      ) return;
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          target.isContentEditable
+        ) return;
+        // Don't hijack keyboard activation for focused interactive controls
+        // (e.g. Space on a focused Button should trigger that button, not flip
+        // the card). Rating digits (1-4) don't conflict with native button
+        // activation, so we only bail for keys that DO collide.
+        const isInteractive =
+          tag === 'BUTTON' ||
+          tag === 'A' ||
+          target.getAttribute('role') === 'button' ||
+          target.getAttribute('role') === 'menuitem';
+        if (
+          isInteractive &&
+          (e.key === ' ' || e.code === 'Space' || e.key === 'Enter')
+        ) return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleExit();
+        return;
+      }
+      if (sessionDone || !currentCard) return;
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        if (!showAnswer) setShowAnswer(true);
+        return;
+      }
+      const k = e.key.toLowerCase();
+      if (k === 'r') {
+        e.preventDefault();
+        const side: 'front' | 'back' = showAnswer ? 'back' : 'front';
+        speakSide(side);
+        return;
+      }
+      if (showAnswer) {
+        const ratingMap: Record<string, FSRSRating> = {
+          '1': 'again',
+          '2': 'hard',
+          '3': 'good',
+          '4': 'easy',
+        };
+        const r = ratingMap[e.key];
+        if (r) {
+          e.preventDefault();
+          handleRate(r);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // speakSide / handleRate / handleExit close over the latest state via the
+    // listed deps; the listener is re-registered on relevant changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    addCardOpen,
+    editCardOpen,
+    confirmDeleteOpen,
+    installVoicesOpen,
+    exitConfirmOpen,
+    sessionDone,
+    showAnswer,
+    currentCard,
+    resolved,
+    effectiveFrontLang,
+    effectiveBackLang,
+    queue.length,
+    position,
+  ]);
+
   const handleAddCardSubmit = (values: {
     front: string;
     back: string;
@@ -281,8 +388,9 @@ export const DeckReviewPage = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/flashcards')}
+              onClick={handleExit}
               className="h-9 w-9 shrink-0"
+              aria-label={t('review.exit')}
             >
               <BackIcon className="w-5 h-5" />
             </Button>
@@ -306,7 +414,12 @@ export const DeckReviewPage = () => {
             {currentCard && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    aria-label={t('a11y.cardMenu')}
+                  >
                     <MoreVertical className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -363,16 +476,32 @@ export const DeckReviewPage = () => {
                     {t('flashcards.front')}
                   </Badge>
                   {effectiveFrontLang && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => speakSide('front')}
-                      className="h-7 w-7"
-                      aria-label={t('tts.speak')}
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => speakSide('front')}
+                        className="h-7 w-7"
+                        aria-label={speaking ? t('tts.replay') : t('tts.speak')}
+                        title={speaking ? t('tts.replay') : t('tts.speak')}
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </Button>
+                      {speaking && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={ttsCancel}
+                          className="h-7 w-7 text-danger hover:text-danger"
+                          aria-label={t('tts.stop')}
+                          title={t('tts.stop')}
+                        >
+                          <Square className="w-3.5 h-3.5 fill-current" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div
@@ -391,16 +520,32 @@ export const DeckReviewPage = () => {
                         {t('flashcards.back')}
                       </Badge>
                       {effectiveBackLang && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => speakSide('back')}
-                          className="h-7 w-7"
-                          aria-label={t('tts.speak')}
-                        >
-                          <Volume2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => speakSide('back')}
+                            className="h-7 w-7"
+                            aria-label={speaking ? t('tts.replay') : t('tts.speak')}
+                            title={speaking ? t('tts.replay') : t('tts.speak')}
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </Button>
+                          {speaking && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={ttsCancel}
+                              className="h-7 w-7 text-danger hover:text-danger"
+                              aria-label={t('tts.stop')}
+                              title={t('tts.stop')}
+                            >
+                              <Square className="w-3.5 h-3.5 fill-current" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div
@@ -452,6 +597,13 @@ export const DeckReviewPage = () => {
                 </div>
               )}
             </div>
+
+            <p
+              className="hidden md:block text-center text-[11px] text-muted-foreground mt-3"
+              aria-hidden="true"
+            >
+              {t('review.shortcutsHint')}
+            </p>
           </>
         )}
       </main>
@@ -475,6 +627,28 @@ export const DeckReviewPage = () => {
         open={installVoicesOpen}
         onOpenChange={setInstallVoicesOpen}
       />
+
+      <AlertDialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('review.exitConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('review.exitConfirmDesc')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('review.stay')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setExitConfirmOpen(false);
+                navigate('/flashcards');
+              }}
+            >
+              {t('review.exitConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <AlertDialogContent>
