@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, Volume2, BookOpen } from 'lucide-react';
+import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, Volume2, BookOpen, Pause } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -64,7 +64,8 @@ export const FlashcardsPage = () => {
   const [createDeckOpen, setCreateDeckOpen] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
   const [addCardTargetDeckId, setAddCardTargetDeckId] = useState<string | null>(null);
-  const [manageDeck, setManageDeck] = useState<{ id: string; name: string; focusCardId?: string } | null>(null);
+  const [manageDeck, setManageDeck] = useState<{ id: string; name: string; focusCardId?: string; initialStatusFilter?: 'all' | 'active' | 'suspended' } | null>(null);
+  const [suspendedPickerOpen, setSuspendedPickerOpen] = useState(false);
   const location = useLocation();
   const [bulkAddDeck, setBulkAddDeck] = useState<{ id: string; name: string } | null>(null);
   const [settingsDeck, setSettingsDeck] = useState<Deck | null>(null);
@@ -87,7 +88,7 @@ export const FlashcardsPage = () => {
   }, [location.state, location.pathname, data.decks, navigate]);
 
   const stats = useMemo(() => {
-    const map = new Map<string, { total: number; due: number; isNew: number }>();
+    const map = new Map<string, { total: number; due: number; isNew: number; suspended: number }>();
     const now = new Date();
     for (const d of decks) {
       const cards = getDeckCards(d.id);
@@ -100,10 +101,24 @@ export const FlashcardsPage = () => {
           new Date(c.nextReviewDate) <= now,
       ).length;
       const isNew = cards.filter(c => !c.fsrs || c.fsrs.state === 'new').length;
-      map.set(d.id, { total: cards.length, due, isNew });
+      const suspended = cards.filter(c => !!c.suspended).length;
+      map.set(d.id, { total: cards.length, due, isNew, suspended });
     }
     return map;
   }, [decks, getDeckCards]);
+
+  const suspendedSummary = useMemo(() => {
+    let total = 0;
+    const decksWithSuspended: { id: string; name: string; count: number }[] = [];
+    for (const d of decks) {
+      const s = stats.get(d.id);
+      if (s && s.suspended > 0) {
+        total += s.suspended;
+        decksWithSuspended.push({ id: d.id, name: d.name, count: s.suspended });
+      }
+    }
+    return { total, decks: decksWithSuspended };
+  }, [decks, stats]);
 
   const handleImportClick = () => fileInputRef.current?.click();
 
@@ -370,6 +385,77 @@ export const FlashcardsPage = () => {
             </CardContent>
           </Card>
         ) : (
+          <>
+          {suspendedSummary.total > 0 && (
+            <Popover open={suspendedPickerOpen} onOpenChange={setSuspendedPickerOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'w-full mb-3 rounded-lg border border-warning/30 bg-warning/10 hover:bg-warning/15 transition-colors p-3 flex items-center gap-3',
+                    isRTL && 'flex-row-reverse text-right',
+                  )}
+                  aria-label={t('flashcards.suspendedSummaryTitle')}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center shrink-0">
+                    <Pause className="w-5 h-5 text-warning" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-warning">
+                      {t('flashcards.suspendedSummaryTitle')}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {t('flashcards.suspendedSummaryDesc', {
+                        count: suspendedSummary.total,
+                        decks: suspendedSummary.decks.length,
+                      })}
+                    </div>
+                  </div>
+                  <Badge className="text-[11px] font-semibold bg-warning text-warning-foreground border-transparent">
+                    {suspendedSummary.total}
+                  </Badge>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align={isRTL ? 'end' : 'start'}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                className="w-72 p-1"
+              >
+                <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  {t('flashcards.suspendedPickDeckTitle')}
+                </div>
+                <div className="flex flex-col max-h-72 overflow-auto">
+                  {suspendedSummary.decks.map(d => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => {
+                        setSuspendedPickerOpen(false);
+                        setManageDeck({
+                          id: d.id,
+                          name: d.name,
+                          initialStatusFilter: 'suspended',
+                        });
+                      }}
+                      className={cn(
+                        'flex items-center gap-2 px-2 py-2 text-sm rounded hover:bg-accent/40 text-left',
+                        isRTL && 'text-right flex-row-reverse',
+                      )}
+                    >
+                      <Layers className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 truncate">{d.name}</span>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] font-normal border-warning/40 text-warning bg-warning/10"
+                      >
+                        {d.count}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
           <div className={cn(isTabletMode ? 'grid grid-cols-2 gap-3' : 'space-y-3')}>
           {decks.map(deck => {
             const s = stats.get(deck.id) || { total: 0, due: 0, isNew: 0 };
@@ -395,6 +481,27 @@ export const FlashcardsPage = () => {
                           <Badge variant="outline" className="text-[10px] font-normal border-primary/40 text-primary">
                             {t('flashcards.newCount', { count: s.isNew })}
                           </Badge>
+                        )}
+                        {s.suspended > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setManageDeck({
+                                id: deck.id,
+                                name: deck.name,
+                                initialStatusFilter: 'suspended',
+                              })
+                            }
+                            aria-label={t('flashcards.suspendedCount', { count: s.suspended })}
+                            className="inline-flex items-center"
+                          >
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-normal border-warning/40 text-warning bg-warning/10 hover:bg-warning/20 transition-colors cursor-pointer"
+                            >
+                              {t('flashcards.suspendedCount', { count: s.suspended })}
+                            </Badge>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -510,6 +617,7 @@ export const FlashcardsPage = () => {
             );
           })}
           </div>
+          </>
         )}
       </main>
 
@@ -601,6 +709,7 @@ export const FlashcardsPage = () => {
           deckId={manageDeck.id}
           deckName={manageDeck.name}
           focusCardId={manageDeck.focusCardId}
+          initialStatusFilter={manageDeck.initialStatusFilter}
         />
       )}
 

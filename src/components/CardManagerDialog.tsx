@@ -38,6 +38,8 @@ interface CardManagerDialogProps {
   deckName: string;
   /** Optional card to scroll to and highlight when the dialog opens. */
   focusCardId?: string;
+  /** Status filter to apply each time the dialog is opened. */
+  initialStatusFilter?: 'all' | 'active' | 'suspended';
 }
 
 export const CardManagerDialog = ({
@@ -46,6 +48,7 @@ export const CardManagerDialog = ({
   deckId,
   deckName,
   focusCardId,
+  initialStatusFilter,
 }: CardManagerDialogProps) => {
   const { t, isRTL } = useTranslation();
   const { toast } = useToast();
@@ -67,6 +70,7 @@ export const CardManagerDialog = ({
       setHighlightId(null);
       return;
     }
+    if (initialStatusFilter) setStatusFilter(initialStatusFilter);
     if (!focusCardId || lastFocusedRef.current === focusCardId) return;
     lastFocusedRef.current = focusCardId;
     // Wait for ScrollArea to render the list before scrolling.
@@ -82,7 +86,7 @@ export const CardManagerDialog = ({
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [open, focusCardId]);
+  }, [open, focusCardId, initialStatusFilter, deckId]);
 
   const allDeckCards = useMemo(
     () => (data.cards || []).filter(c => c.deckId === deckId),
