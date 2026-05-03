@@ -172,6 +172,7 @@ export const ar: TranslationKeys = {
     installPromptDismiss: 'ليس الآن',
     stop: 'إيقاف',
     replay: 'إعادة',
+    speakFailed: 'تعذّر تشغيل الصوت',
   },
 
   // إعدادات الرزمة لكل رزمة (مقسّمة إلى أقسام: النطق، الحدود اليومية، FSRS، الأيام السهلة، الدراسة المخصّصة)

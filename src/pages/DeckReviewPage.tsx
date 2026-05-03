@@ -195,7 +195,30 @@ export const DeckReviewPage = () => {
     // what the deck voice was picked for; otherwise let the platform default.
     const voiceURI = lang === deckLang ? deckVoice : undefined;
     const text = side === 'front' ? resolved.front : resolved.back;
-    ttsSpeak({ text, lang, voiceURI, rate: ttsRate });
+    ttsSpeak({
+      text,
+      lang,
+      voiceURI,
+      rate: ttsRate,
+      onError: (err) => {
+        if (err.kind === 'unsupportedLang' && isInstallSupported()) {
+          // Voice data isn't installed for this language — open the install
+          // flow instead of silently doing nothing.
+          setInstallVoicesOpen(true);
+        } else if (err.kind === 'unavailable') {
+          toast({
+            title: t('tts.engineMissing'),
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: t('tts.speakFailed'),
+            description: err.message,
+            variant: 'destructive',
+          });
+        }
+      },
+    });
   };
 
   // Auto-prompt: if this deck wants TTS but the required system voices aren't

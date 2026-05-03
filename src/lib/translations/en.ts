@@ -170,6 +170,7 @@ export const en = {
     installPromptDismiss: 'Not now',
     stop: 'Stop',
     replay: 'Replay',
+    speakFailed: 'Could not play audio',
   },
 
   // Per-deck settings dialog (sectioned: TTS, daily limits, FSRS, easy days, custom study)

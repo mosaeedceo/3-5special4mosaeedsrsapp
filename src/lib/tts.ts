@@ -1,4 +1,4 @@
-import { isNativePlatform } from './platform';
+import { getPlatform, isNativePlatform } from './platform';
 
 export interface TTSVoice {
   voiceURI: string;
@@ -8,11 +8,19 @@ export interface TTSVoice {
   default?: boolean;
 }
 
+/** Reason a speak() call failed — surfaced to the caller via onError. */
+export type SpeakErrorKind =
+  | 'unsupportedLang'   // language/voice data not installed for this lang
+  | 'unavailable'       // engine never initialized / no engine on device
+  | 'unknown';
+
 export interface SpeakOptions {
   text: string;
   lang: string;             // BCP-47, e.g. "de-DE"
   voiceURI?: string;        // optional preferred voice URI
   rate?: number;            // 0.5 - 1.5
+  /** Invoked when speech fails to play (cross-platform). */
+  onError?: (err: { kind: SpeakErrorKind; lang: string; message?: string }) => void;
 }
 
 /** Strip HTML tags & decode entities → plain text suitable for speech. */
@@ -106,7 +114,10 @@ const webGetVoices = (): Promise<TTSVoice[]> => {
 };
 
 const webSpeak = (opts: SpeakOptions): void => {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    opts.onError?.({ kind: 'unavailable', lang: opts.lang });
+    return;
+  }
   const text = stripHtmlForSpeech(opts.text);
   if (!text) return;
   const synth = window.speechSynthesis;
@@ -121,7 +132,17 @@ const webSpeak = (opts: SpeakOptions): void => {
   }
   utter.onstart = () => setSpeakingState(true);
   utter.onend = () => setSpeakingState(false);
-  utter.onerror = () => setSpeakingState(false);
+  utter.onerror = (e) => {
+    setSpeakingState(false);
+    const err = e as SpeechSynthesisErrorEvent;
+    const kind: SpeakErrorKind =
+      err?.error === 'language-unavailable' || err?.error === 'voice-unavailable'
+        ? 'unsupportedLang'
+        : err?.error === 'synthesis-unavailable' || err?.error === 'audio-busy'
+          ? 'unavailable'
+          : 'unknown';
+    opts.onError?.({ kind, lang: opts.lang, message: err?.error });
+  };
   synth.speak(utter);
 };
 
@@ -165,6 +186,55 @@ const nativeGetVoices = async (): Promise<TTSVoice[]> => {
   }
 };
 
+/** Normalize a BCP-47 tag (accept "de_DE", "DE-de" → "de-DE"). */
+const normalizeLangTag = (lang: string): string => {
+  if (!lang) return lang;
+  const parts = lang.replace('_', '-').split('-');
+  if (parts.length === 0 || !parts[0]) return lang;
+  const primary = parts[0].toLowerCase();
+  const region = parts[1] ? parts[1].toUpperCase() : '';
+  return region ? `${primary}-${region}` : primary;
+};
+
+/**
+ * Find the best language tag actually supported by the engine.
+ * Tries exact match, then primary subtag (e.g. "de"), then any installed
+ * tag that starts with the primary subtag (e.g. "de-AT" when "de-DE" was asked).
+ * Returns null if nothing matches.
+ */
+const resolveSupportedLang = async (
+  tts: any,
+  requested: string,
+): Promise<string | null> => {
+  const want = normalizeLangTag(requested);
+  const primary = want.split('-')[0]?.toLowerCase();
+  // Quick yes/no for the exact tag.
+  try {
+    const exact = await tts.isLanguageSupported({ lang: want });
+    if (exact?.supported) return want;
+  } catch { /* fall through */ }
+  // Pull the full installed list and search.
+  let installed: string[] = [];
+  try {
+    const res = await tts.getSupportedLanguages();
+    installed = (res?.languages || []).map((l: string) => normalizeLangTag(l));
+  } catch { /* ignore */ }
+  if (installed.includes(want)) return want;
+  if (primary && installed.includes(primary)) return primary;
+  if (primary) {
+    const sameLang = installed.find(l => l.toLowerCase().startsWith(primary + '-'));
+    if (sameLang) return sameLang;
+  }
+  // Last-resort probe: ask about the primary subtag alone.
+  if (primary) {
+    try {
+      const p = await tts.isLanguageSupported({ lang: primary });
+      if (p?.supported) return primary;
+    } catch { /* ignore */ }
+  }
+  return null;
+};
+
 const nativeSpeak = async (opts: SpeakOptions): Promise<void> => {
   const tts = await loadNative();
   if (!tts) { webSpeak(opts); return; }
@@ -172,23 +242,66 @@ const nativeSpeak = async (opts: SpeakOptions): Promise<void> => {
   if (!text) return;
   try { await tts.stop(); } catch { /* ignore */ }
   setSpeakingState(false);
+
+  // Resolve a language the engine actually supports — the plugin's `speak()`
+  // hard-rejects with "This language is not supported." otherwise, which used
+  // to silently fail before. Engine init is async, so retry briefly.
+  let resolvedLang: string | null = null;
+  for (let attempt = 0; attempt < 4 && !resolvedLang; attempt++) {
+    resolvedLang = await resolveSupportedLang(tts, opts.lang);
+    if (!resolvedLang) await new Promise(r => setTimeout(r, 150));
+  }
+  if (!resolvedLang) {
+    console.warn('[tts] native speak: language not supported', opts.lang);
+    opts.onError?.({ kind: 'unsupportedLang', lang: opts.lang });
+    return;
+  }
+
+  // Voice index — the Android plugin returns voiceURI = Voice.getName(), so
+  // exact-URI lookup works when the caller supplied one. Fall back to a
+  // voice whose lang matches our resolved tag (or its primary subtag).
+  let voiceIdx = -1;
   try {
-    const voices: any[] = (await tts.getSupportedVoices())?.voices || [];
-    const idx = opts.voiceURI
-      ? voices.findIndex(v => v.voiceURI === opts.voiceURI)
-      : -1;
-    setSpeakingState(true);
-    await tts.speak({
-      text,
-      lang: opts.lang,
-      rate: clampRate(opts.rate),
-      pitch: 1.0,
-      volume: 1.0,
-      category: 'ambient',
-      ...(idx >= 0 ? { voice: idx } : {}),
-    });
-  } catch (err) {
-    console.warn('[tts] native speak failed', err);
+    const voicesRes = await tts.getSupportedVoices();
+    const voices: any[] = voicesRes?.voices || [];
+    if (opts.voiceURI) {
+      voiceIdx = voices.findIndex(v => v.voiceURI === opts.voiceURI);
+    }
+    if (voiceIdx < 0) {
+      const want = resolvedLang.toLowerCase();
+      const primary = want.split('-')[0];
+      voiceIdx = voices.findIndex(v => normalizeLangTag(v.lang || '').toLowerCase() === want);
+      if (voiceIdx < 0 && primary) {
+        voiceIdx = voices.findIndex(v => (v.lang || '').toLowerCase().startsWith(primary));
+      }
+    }
+  } catch { /* getSupportedVoices is optional for playback */ }
+
+  // `category` is iOS-only in the plugin's TTSOptions; pass only on iOS.
+  const isIOS = getPlatform() === 'ios';
+  const speakOpts: Record<string, unknown> = {
+    text,
+    lang: resolvedLang,
+    rate: clampRate(opts.rate),
+    pitch: 1.0,
+    volume: 1.0,
+  };
+  if (voiceIdx >= 0) speakOpts.voice = voiceIdx;
+  if (isIOS) speakOpts.category = 'ambient';
+
+  setSpeakingState(true);
+  try {
+    await tts.speak(speakOpts);
+  } catch (err: any) {
+    const msg = String(err?.message || err || '');
+    console.warn('[tts] native speak failed', msg, { lang: resolvedLang, voiceIdx });
+    const kind: SpeakErrorKind =
+      /language is not supported/i.test(msg)
+        ? 'unsupportedLang'
+        : /not yet initialized|not available/i.test(msg)
+          ? 'unavailable'
+          : 'unknown';
+    opts.onError?.({ kind, lang: opts.lang, message: msg });
   } finally {
     setSpeakingState(false);
   }
