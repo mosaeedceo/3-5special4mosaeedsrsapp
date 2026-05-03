@@ -124,6 +124,9 @@ export const BulkAddCardsDialog = ({
               autoFocus
               dir="ltr"
             />
+            <p className="text-[11px] text-muted-foreground">
+              {t('flashcards.bulkColumnsHint')}
+            </p>
           </div>
 
           <div className={cn('flex items-center gap-3 flex-wrap', isRTL && 'flex-row-reverse')}>
@@ -192,12 +195,19 @@ export const BulkAddCardsDialog = ({
                 {rows.slice(0, 5).map((row, idx) => (
                   <li
                     key={idx}
-                    className="text-xs flex items-center gap-2 min-w-0"
+                    className="text-xs min-w-0 flex flex-col gap-0.5"
                     dir="ltr"
                   >
-                    <span className="truncate flex-1 text-foreground">{row.front}</span>
-                    <span className="text-muted-foreground shrink-0">→</span>
-                    <span className="truncate flex-1 text-muted-foreground">{row.back}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="truncate flex-1 text-foreground">{row.front}</span>
+                      <span className="text-muted-foreground shrink-0">→</span>
+                      <span className="truncate flex-1 text-muted-foreground">{row.back}</span>
+                    </div>
+                    {row.example && (
+                      <div className="truncate text-[11px] text-muted-foreground/80 italic pl-2 border-l-2 border-muted-foreground/20">
+                        {row.example}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
