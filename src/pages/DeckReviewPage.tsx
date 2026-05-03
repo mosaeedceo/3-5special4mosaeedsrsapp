@@ -29,6 +29,7 @@ import { getCardReviewOptions } from '@/lib/cardFsrs';
 import { FSRSRating, Card as FlashCard } from '@/types/lesson';
 import { speak as ttsSpeak, cancel as ttsCancel, subscribeSpeaking } from '@/lib/tts';
 import { detectLanguage } from '@/lib/langDetect';
+import { looksLikeLanguageDeck } from '@/lib/languageDeckDetect';
 import { cn } from '@/lib/utils';
 import { CardEditorDialog } from '@/components/CardEditorDialog';
 import { InstallVoicesDialog } from '@/components/InstallVoicesDialog';
@@ -192,10 +193,19 @@ export const DeckReviewPage = () => {
     effectiveFrontLang ||
     '';
 
-  // True when the deck has a target language configured (front OR back) —
-  // language-learning decks get a dedicated stacked-paper layout matching
-  // the design.
-  const isLangDeck = !!(deckFrontLang || deckBackLang);
+  // True when the deck has a target language configured (front OR back), OR
+  // when its card content looks like a vocabulary deck (short term -> short
+  // translation, or most cards carry an `example` sentence). Language decks
+  // get a dedicated stacked-paper layout matching the design — this lets
+  // imported Anki vocab decks pick it up automatically without needing TTS.
+  const deckCards = useMemo(
+    () => (deckId ? allCards.filter(c => c.deckId === deckId) : []),
+    [allCards, deckId],
+  );
+  const isLangDeck = useMemo(
+    () => looksLikeLanguageDeck(deck, deckCards),
+    [deck, deckCards],
+  );
 
   const speakSide = (side: 'front' | 'back' | 'example') => {
     if (!resolved) return;
