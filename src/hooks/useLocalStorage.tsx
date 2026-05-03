@@ -1306,31 +1306,35 @@ const useLocalStorageInternal = () => {
     cardId: string,
     rating: FSRSRating,
   ): { leechSuspended: boolean } => {
-    let leechSuspended = false;
+    // Compute the next FSRS state and leech decision synchronously off the
+    // current data snapshot so callers (DeckReviewPage) can react to a
+    // suspension immediately. The `setData` updater below would set this
+    // flag too late — it runs after the function returns.
+    const current = dataRef.current;
+    const card = (current.cards || []).find(c => c.id === cardId);
+    if (!card) return { leechSuspended: false };
+
+    const retention = current.settings.desiredRetention ?? 0.9;
+    const { fsrsState, nextReviewDate } = processCardReview(card, rating, retention);
+    const historyEntry = {
+      date: new Date().toISOString(),
+      rating,
+      stability: fsrsState.stability,
+      difficulty: fsrsState.difficulty,
+    };
+    const threshold = current.settings.leechThreshold ?? 0;
+    const leechSuspended = shouldAutoSuspendAsLeech(fsrsState, card.suspended, threshold);
+
     setData(prev => {
       const cards = prev.cards || [];
-      const card = cards.find(c => c.id === cardId);
-      if (!card) return prev;
-
-      const retention = prev.settings.desiredRetention ?? 0.9;
-      const { fsrsState, nextReviewDate } = processCardReview(card, rating, retention);
-      const historyEntry = {
-        date: new Date().toISOString(),
-        rating,
-        stability: fsrsState.stability,
-        difficulty: fsrsState.difficulty,
-      };
-      // Auto-suspend leeches via the shared cardFsrs helper so any
-      // future review entry point applies the same rule.
-      const threshold = prev.settings.leechThreshold ?? 0;
-      const shouldSuspend = shouldAutoSuspendAsLeech(fsrsState, card.suspended, threshold);
-      if (shouldSuspend) leechSuspended = true;
+      const target = cards.find(c => c.id === cardId);
+      if (!target) return prev;
       const updatedCard: Card = {
-        ...card,
+        ...target,
         fsrs: fsrsState,
         nextReviewDate: nextReviewDate.toISOString(),
-        reviewHistory: [...(card.reviewHistory || []), historyEntry],
-        ...(shouldSuspend ? { suspended: true } : {}),
+        reviewHistory: [...(target.reviewHistory || []), historyEntry],
+        ...(leechSuspended ? { suspended: true } : {}),
       };
       return {
         ...prev,
