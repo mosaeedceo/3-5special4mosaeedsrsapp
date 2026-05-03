@@ -48,8 +48,41 @@ export const StatsPage = () => {
     scope === 'lessons' ? lessonsMasteredTotal
     : scope === 'cards' ? masteredCardsCount
     : lessonsMasteredTotal + masteredCardsCount;
-  const todayCount = getTodayLessons().length;
-  const missedCount = getMissedLessons().length;
+  const todayLessonCount = getTodayLessons().length;
+  const missedLessonCount = getMissedLessons().length;
+
+  // Scope-aware due/missed card counts (mirrors getDueCards semantics + missed = scheduled-and-overdue).
+  const { todayCardCount, missedCardCount } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
+    let todayCards = 0;
+    let missedCards = 0;
+    for (const c of (data.cards || [])) {
+      if (c.suspended) continue;
+      const isNew = !c.fsrs || c.fsrs.state === 'new';
+      const next = new Date(c.nextReviewDate);
+      if (isNew) {
+        todayCards++;
+      } else if (next < today) {
+        missedCards++;
+        todayCards++;
+      } else if (next <= endOfToday) {
+        todayCards++;
+      }
+    }
+    return { todayCardCount: todayCards, missedCardCount: missedCards };
+  }, [data.cards]);
+
+  const todayCount =
+    scope === 'lessons' ? todayLessonCount
+    : scope === 'cards' ? todayCardCount
+    : todayLessonCount + todayCardCount;
+  const missedCount =
+    scope === 'lessons' ? missedLessonCount
+    : scope === 'cards' ? missedCardCount
+    : missedLessonCount + missedCardCount;
 
   // Get Medical Board categories
   const medicalBoardCategories = useMemo(() => {
@@ -283,7 +316,11 @@ export const StatsPage = () => {
           
           <Card 
             className={cn("transition-all", missedCount > 0 && "cursor-pointer hover:border-danger/50 hover:shadow-sm active:scale-[0.97]")}
-            onClick={() => missedCount > 0 && navigate('/', { state: { scrollToMissed: true } })}
+            onClick={() => {
+              if (missedCount === 0) return;
+              if (scope === 'cards') navigate('/flashcards');
+              else navigate('/', { state: { scrollToMissed: true } });
+            }}
           >
             <CardContent className="p-3 sm:p-4 text-center relative">
               <BarChart3 className="w-5 h-5 mx-auto mb-1 text-danger" />
@@ -295,7 +332,10 @@ export const StatsPage = () => {
 
           <Card
             className={cn("transition-all", todayCount > 0 && "cursor-pointer hover:border-primary/50 hover:shadow-sm active:scale-[0.97]")}
-            onClick={() => todayCount > 0 && navigate('/')}
+            onClick={() => {
+              if (todayCount === 0) return;
+              navigate(scope === 'cards' ? '/flashcards' : '/');
+            }}
           >
             <CardContent className="p-3 sm:p-4 text-center relative">
               <Target className="w-5 h-5 mx-auto mb-1 text-primary" />
