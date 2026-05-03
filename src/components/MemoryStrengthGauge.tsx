@@ -1,20 +1,28 @@
 import { useMemo } from 'react';
-import { Lesson } from '@/types/lesson';
+import { Lesson, Card as FlashCard, FSRSState } from '@/types/lesson';
 import { calculateRetrievability } from '@/lib/fsrs';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Brain, Shield, AlertTriangle, AlertCircle } from 'lucide-react';
 
-interface MemoryStrengthGaugeProps {
-  lessons: Lesson[];
+interface StatsItem {
+  fsrs?: FSRSState;
+  dateAdded: string;
 }
 
-export const MemoryStrengthGauge = ({ lessons }: MemoryStrengthGaugeProps) => {
+interface MemoryStrengthGaugeProps {
+  lessons: Lesson[];
+  /** Optional cards to merge into memory strength (used when scope includes cards). */
+  cards?: FlashCard[];
+}
+
+export const MemoryStrengthGauge = ({ lessons, cards }: MemoryStrengthGaugeProps) => {
   const { t } = useTranslation();
 
   const stats = useMemo(() => {
-    const lessonsWithFSRS = lessons.filter(l => l.fsrs);
+    const items: StatsItem[] = [...lessons, ...(cards || [])];
+    const itemsWithFSRS = items.filter(l => l.fsrs);
     
-    if (lessonsWithFSRS.length === 0) {
+    if (itemsWithFSRS.length === 0) {
       return {
         avgRetrievability: 0,
         strongCount: 0,
@@ -29,12 +37,12 @@ export const MemoryStrengthGauge = ({ lessons }: MemoryStrengthGaugeProps) => {
     let needsReviewCount = 0;
     let totalRetrievability = 0;
 
-    lessonsWithFSRS.forEach(lesson => {
-      const lastReview = lesson.fsrs?.lastReview 
-        ? new Date(lesson.fsrs.lastReview) 
-        : new Date(lesson.dateAdded);
+    itemsWithFSRS.forEach(item => {
+      const lastReview = item.fsrs?.lastReview 
+        ? new Date(item.fsrs.lastReview) 
+        : new Date(item.dateAdded);
       const elapsedDays = Math.max(0, (Date.now() - lastReview.getTime()) / (1000 * 60 * 60 * 24));
-      const retrievability = calculateRetrievability(lesson.fsrs?.stability || 0, elapsedDays);
+      const retrievability = calculateRetrievability(item.fsrs?.stability || 0, elapsedDays);
       
       totalRetrievability += retrievability;
 
@@ -48,13 +56,13 @@ export const MemoryStrengthGauge = ({ lessons }: MemoryStrengthGaugeProps) => {
     });
 
     return {
-      avgRetrievability: Math.round((totalRetrievability / lessonsWithFSRS.length) * 100),
+      avgRetrievability: Math.round((totalRetrievability / itemsWithFSRS.length) * 100),
       strongCount,
       atRiskCount,
       needsReviewCount,
-      totalWithFSRS: lessonsWithFSRS.length,
+      totalWithFSRS: itemsWithFSRS.length,
     };
-  }, [lessons]);
+  }, [lessons, cards]);
 
   const getGaugeColor = (percentage: number) => {
     if (percentage >= 85) return 'text-success';

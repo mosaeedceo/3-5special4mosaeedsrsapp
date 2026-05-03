@@ -1,13 +1,20 @@
 import { useMemo } from 'react';
-import { Lesson } from '@/types/lesson';
+import { Lesson, Card as FlashCard, FSRSState } from '@/types/lesson';
 import { calculateRetrievability } from '@/lib/fsrs';
 import { useTranslation } from '@/hooks/useTranslation';
 
-interface StabilityDistributionChartProps {
-  lessons: Lesson[];
+interface StatsItem {
+  fsrs?: FSRSState;
+  dateAdded: string;
 }
 
-export const StabilityDistributionChart = ({ lessons }: StabilityDistributionChartProps) => {
+interface StabilityDistributionChartProps {
+  lessons: Lesson[];
+  /** Optional cards to merge into the distribution (used when scope includes cards). */
+  cards?: FlashCard[];
+}
+
+export const StabilityDistributionChart = ({ lessons, cards }: StabilityDistributionChartProps) => {
   const { t, isRTL } = useTranslation();
   
   const STABILITY_RANGES = useMemo(() => [
@@ -18,14 +25,19 @@ export const StabilityDistributionChart = ({ lessons }: StabilityDistributionCha
     { label: t('stabilityChart.mastered'), range: '180d+', min: 180, max: Infinity, color: 'hsl(var(--success))' },
   ], [t]);
 
+  const items: StatsItem[] = useMemo(
+    () => [...lessons, ...(cards || [])],
+    [lessons, cards],
+  );
+
   const distributionData = useMemo(() => {
     const distribution = STABILITY_RANGES.map(range => ({
       ...range,
       count: 0,
     }));
 
-    lessons.forEach(lesson => {
-      const stability = lesson.fsrs?.stability || 0;
+    items.forEach(item => {
+      const stability = item.fsrs?.stability || 0;
       
       for (let i = 0; i < distribution.length; i++) {
         if (stability >= distribution[i].min && stability < distribution[i].max) {
@@ -36,39 +48,39 @@ export const StabilityDistributionChart = ({ lessons }: StabilityDistributionCha
     });
 
     return distribution;
-  }, [lessons]);
+  }, [items, STABILITY_RANGES]);
 
   const maxCount = Math.max(...distributionData.map(d => d.count), 1);
 
   // Calculate average stability
   const avgStability = useMemo(() => {
-    if (lessons.length === 0) return 0;
-    const total = lessons.reduce((sum, l) => sum + (l.fsrs?.stability || 0), 0);
-    return Math.round(total / lessons.length);
-  }, [lessons]);
+    if (items.length === 0) return 0;
+    const total = items.reduce((sum, l) => sum + (l.fsrs?.stability || 0), 0);
+    return Math.round(total / items.length);
+  }, [items]);
 
   // Calculate average retrievability
   const avgRetrievability = useMemo(() => {
-    if (lessons.length === 0) return 0;
+    if (items.length === 0) return 0;
     const now = new Date();
     
-    const totalRetrievability = lessons.reduce((sum, lesson) => {
-      if (!lesson.fsrs) return sum;
+    const totalRetrievability = items.reduce((sum, item) => {
+      if (!item.fsrs) return sum;
       
-      const lastReview = lesson.fsrs.lastReview 
-        ? new Date(lesson.fsrs.lastReview) 
-        : new Date(lesson.dateAdded);
+      const lastReview = item.fsrs.lastReview 
+        ? new Date(item.fsrs.lastReview) 
+        : new Date(item.dateAdded);
       const elapsedDays = Math.max(0, Math.floor(
         (now.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
       ));
       
-      return sum + calculateRetrievability(lesson.fsrs.stability, elapsedDays);
+      return sum + calculateRetrievability(item.fsrs.stability, elapsedDays);
     }, 0);
     
-    return Math.round((totalRetrievability / lessons.length) * 100);
-  }, [lessons]);
+    return Math.round((totalRetrievability / items.length) * 100);
+  }, [items]);
 
-  if (lessons.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="flex items-center justify-center h-36 text-muted-foreground text-sm">
         {t('statsPage.noLessons')}

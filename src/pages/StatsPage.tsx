@@ -425,10 +425,8 @@ export const StatsPage = () => {
           </Card>
         )}
 
-        {/* Memory Strength & Weekly Summary - responsive grid (lesson-only) */}
-        {scope !== 'cards' && (
+        {/* Memory Strength (scope-aware: lessons / cards / both) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Memory Strength Gauge */}
           <Card className="animate-fade-in" style={{ animationDelay: '0.07s' }}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
@@ -440,11 +438,14 @@ export const StatsPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <MemoryStrengthGauge lessons={data.lessons} />
+              <MemoryStrengthGauge
+                lessons={scope === 'cards' ? [] : data.lessons}
+                cards={scope === 'lessons' ? undefined : (data.cards || [])}
+              />
             </CardContent>
           </Card>
 
-          {/* Weekly Summary */}
+          {/* Weekly Summary (combined activity — visible in all scopes) */}
           <Card className="animate-fade-in" style={{ animationDelay: '0.07s' }}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
@@ -460,7 +461,6 @@ export const StatsPage = () => {
             </CardContent>
           </Card>
         </div>
-        )}
 
         {/* Mastery & Difficulty - responsive grid (lesson-only) */}
         {scope !== 'cards' && (
@@ -502,8 +502,8 @@ export const StatsPage = () => {
         </div>
         )}
 
-        {/* Stage/Stability Distribution (lesson-only) */}
-        {scope !== 'cards' && (
+        {/* Stage/Stability Distribution — FSRS chart is scope-aware; non-FSRS stage chart is lesson-only */}
+        {(data.settings.useFSRS || scope !== 'cards') && (
         <Card className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
@@ -525,7 +525,10 @@ export const StatsPage = () => {
           </CardHeader>
           <CardContent>
             {data.settings.useFSRS ? (
-              <StabilityDistributionChart lessons={data.lessons} />
+              <StabilityDistributionChart
+                lessons={scope === 'cards' ? [] : data.lessons}
+                cards={scope === 'lessons' ? undefined : (data.cards || [])}
+              />
             ) : (
               <StageDistributionChart 
                 lessons={data.lessons} 

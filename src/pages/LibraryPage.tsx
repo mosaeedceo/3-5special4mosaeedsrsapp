@@ -2,12 +2,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUndoableActions } from '@/hooks/useUndoableActions';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { LessonCard } from '@/components/LessonCard';
 import { FloatingAddButton } from '@/components/FloatingAddButton';
-import { CardManagerDialog } from '@/components/CardManagerDialog';
-import { Badge } from '@/components/ui/badge';
-import { Layers } from 'lucide-react';
 import { SearchFilters, StatusFilter, SortOption } from '@/components/SearchFilters';
 import { EmptyState } from '@/components/EmptyState';
 import { BulkActionsBar } from '@/components/BulkActionsBar';
@@ -60,7 +57,16 @@ export const LibraryPage = () => {
   const SESSION_SORT_KEY = 'library-sort-preference';
   const SESSION_STATUS_KEY = 'library-status-preference';
 
-  const [searchQuery, setSearchQuery] = useState('');
+  // Search query is owned at the BrowsePage level via URL `?q=` so card hits can render above the tabs.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
+  const setSearchQuery = useCallback((v: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (v) next.set('q', v); else next.delete('q');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [categoryFilter, setCategoryFilter] = useState(navState?.categoryFilter || 'all');
   const [bulkMode, setBulkMode] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -85,7 +91,6 @@ export const LibraryPage = () => {
   }, [navState?.initialStatusFilter]);
   
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
-  const [cardHitDeck, setCardHitDeck] = useState<{ id: string; name: string; focusCardId?: string } | null>(null);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -202,28 +207,6 @@ export const LibraryPage = () => {
     data.lessons.filter(l => selectedLessons.has(l.id)), 
     [data.lessons, selectedLessons]
   );
-
-  // Search-driven flashcard hits. Strips HTML so card front/back/tags can be matched as plain text.
-  const cardSearchHits = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [] as Array<{ card: import('@/types/lesson').Card; deckName: string }>;
-    const decks = data.decks || [];
-    const cards = data.cards || [];
-    const stripHtmlLower = (html: string) =>
-      html.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-    const out: Array<{ card: import('@/types/lesson').Card; deckName: string }> = [];
-    for (const c of cards) {
-      const front = stripHtmlLower(c.front || '');
-      const back = stripHtmlLower(c.back || '');
-      const tags = (c.tags || []).join(' ').toLowerCase();
-      if (front.includes(q) || back.includes(q) || tags.includes(q)) {
-        const deck = decks.find(d => d.id === c.deckId);
-        out.push({ card: c, deckName: deck?.name || '' });
-        if (out.length >= 50) break;
-      }
-    }
-    return out;
-  }, [searchQuery, data.cards, data.decks]);
 
   const filteredLessons = useMemo(() => {
     const today = new Date();
@@ -376,55 +359,6 @@ export const LibraryPage = () => {
           />
         </div>
 
-        {/* Card matches (search-only) */}
-        {searchQuery.trim() && cardSearchHits.length > 0 && (
-          <div className="mb-4 space-y-2">
-            <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-primary" />
-              {t('flashcards.cardsMatching', { count: cardSearchHits.length })}
-            </h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {cardSearchHits.map(({ card, deckName }) => {
-                const stripHtml = (html: string) =>
-                  html.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim();
-                const front = stripHtml(card.front || '');
-                const back = stripHtml(card.back || '');
-                const isDue = !card.suspended && card.fsrs && card.fsrs.state !== 'new' && new Date(card.nextReviewDate) <= new Date();
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    onClick={() => {
-                      if (isDue) {
-                        navigate(`/flashcards/${card.deckId}/review`, { state: { jumpToCardId: card.id } });
-                      } else {
-                        setCardHitDeck({ id: card.deckId, name: deckName, focusCardId: card.id });
-                      }
-                    }}
-                    className="text-left p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 truncate max-w-[140px]">
-                        <Layers className="w-2.5 h-2.5 mr-1" />
-                        {deckName || t('flashcards.title')}
-                      </Badge>
-                      {isDue && (
-                        <Badge className="text-[10px] h-5 px-1.5 bg-primary/10 text-primary border-primary/30">
-                          {t('flashcards.dueCount', { count: 1 }).replace(/\d+\s*/, '')}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm font-medium text-foreground truncate">{front || '—'}</p>
-                    {back && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{back}</p>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Lessons List */}
         {data.lessons.length === 0 ? (
           <EmptyState type="no-lessons" />
@@ -545,16 +479,6 @@ export const LibraryPage = () => {
         onPositionChange={(pos, coords) => updateSettings({ fabPosition: pos, fabCoordinates: coords })}
       />
 
-      {/* Card manager (opened from card-search hits when card is not yet due) */}
-      {cardHitDeck && (
-        <CardManagerDialog
-          open={!!cardHitDeck}
-          onOpenChange={open => !open && setCardHitDeck(null)}
-          deckId={cardHitDeck.id}
-          deckName={cardHitDeck.name || cardHitDeck.id}
-          focusCardId={cardHitDeck.focusCardId}
-        />
-      )}
     </div>
   );
 };
