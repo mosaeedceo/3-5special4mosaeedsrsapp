@@ -287,7 +287,7 @@ export const CardManagerDialog = ({
             </div>
           )}
 
-          <ScrollArea className="flex-1 -mx-6 px-6 max-h-[55vh]">
+          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
             {deckCards.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
                 {t('flashcards.noCards')}
