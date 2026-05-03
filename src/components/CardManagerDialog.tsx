@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pencil, Trash2, Plus, ClipboardPaste } from 'lucide-react';
 import {
   Dialog,
@@ -36,6 +36,8 @@ interface CardManagerDialogProps {
   onOpenChange: (open: boolean) => void;
   deckId: string;
   deckName: string;
+  /** Optional card to scroll to and highlight when the dialog opens. */
+  focusCardId?: string;
 }
 
 export const CardManagerDialog = ({
@@ -43,6 +45,7 @@ export const CardManagerDialog = ({
   onOpenChange,
   deckId,
   deckName,
+  focusCardId,
 }: CardManagerDialogProps) => {
   const { t, isRTL } = useTranslation();
   const { toast } = useToast();
@@ -53,6 +56,32 @@ export const CardManagerDialog = ({
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const cardRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  const lastFocusedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      lastFocusedRef.current = null;
+      setHighlightId(null);
+      return;
+    }
+    if (!focusCardId || lastFocusedRef.current === focusCardId) return;
+    lastFocusedRef.current = focusCardId;
+    // Wait for ScrollArea to render the list before scrolling.
+    const t1 = setTimeout(() => {
+      const el = cardRefs.current.get(focusCardId);
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setHighlightId(focusCardId);
+    }, 80);
+    const t2 = setTimeout(() => setHighlightId(null), 2400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [open, focusCardId]);
 
   const deckCards = useMemo(
     () => (data.cards || []).filter(c => c.deckId === deckId),
@@ -199,7 +228,16 @@ export const CardManagerDialog = ({
                 {deckCards.map(card => (
                   <li
                     key={card.id}
-                    className="border border-border rounded-lg p-3 bg-card"
+                    ref={el => {
+                      if (el) cardRefs.current.set(card.id, el);
+                      else cardRefs.current.delete(card.id);
+                    }}
+                    className={cn(
+                      'border rounded-lg p-3 bg-card transition-all duration-300',
+                      highlightId === card.id
+                        ? 'border-primary ring-2 ring-primary/40 shadow-md'
+                        : 'border-border',
+                    )}
                   >
                     <div className={cn('flex items-start gap-2', isRTL && 'flex-row-reverse')}>
                       <div className={cn('flex-1 min-w-0', isRTL && 'text-right')}>

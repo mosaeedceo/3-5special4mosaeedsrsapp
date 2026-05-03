@@ -106,6 +106,7 @@ export const ar: TranslationKeys = {
     fabAddCardTo: 'إضافة بطاقة إلى {deck}',
     fabBulkAdd: 'إضافة بطاقات دفعة واحدة',
     fabNewDeck: 'رزمة جديدة',
+    pickDeckPrompt: 'اختر رزمة',
   },
 
   // التحويل من نص إلى كلام (إعدادات الرزمة + تشغيل المراجعة)

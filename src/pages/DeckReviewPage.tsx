@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Sparkles, Volume2, RotateCcw, Brain, Zap, Plus, Pencil, Trash2, MoreVertical, Square } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
@@ -50,6 +50,9 @@ const RATING_CONFIG: Record<FSRSRating, { Icon: typeof RotateCcw; className: str
 export const DeckReviewPage = () => {
   const { deckId } = useParams<{ deckId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const jumpToCardId = (location.state as { jumpToCardId?: string } | null)?.jumpToCardId;
+  const jumpedRef = useRef(false);
   const { data, getDueCards, reviewCard, addCards, updateCard, deleteCard, updateSettings } = useLocalStorage();
   const { containerClass } = useDisplayMode(data.settings.displayMode);
   const { t, isRTL } = useTranslation();
@@ -83,6 +86,16 @@ export const DeckReviewPage = () => {
   );
   const [position, setPosition] = useState(0);
   const initialTotal = useRef(queue.length);
+
+  // Jump to a specific card if requested via navigation state (from card-search hits).
+  useEffect(() => {
+    if (jumpedRef.current || !jumpToCardId || queue.length === 0) return;
+    const idx = queue.indexOf(jumpToCardId);
+    if (idx >= 0) {
+      setPosition(idx);
+      jumpedRef.current = true;
+    }
+  }, [jumpToCardId, queue]);
   const [showAnswer, setShowAnswer] = useState(false);
   const [resolved, setResolved] = useState<{ front: string; back: string; audioFront: string[]; audioBack: string[] } | null>(null);
 

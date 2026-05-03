@@ -85,7 +85,7 @@ export const LibraryPage = () => {
   }, [navState?.initialStatusFilter]);
   
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set());
-  const [cardHitDeck, setCardHitDeck] = useState<{ id: string; name: string } | null>(null);
+  const [cardHitDeck, setCardHitDeck] = useState<{ id: string; name: string; focusCardId?: string } | null>(null);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -396,9 +396,9 @@ export const LibraryPage = () => {
                     type="button"
                     onClick={() => {
                       if (isDue) {
-                        navigate(`/flashcards/${card.deckId}/review`);
+                        navigate(`/flashcards/${card.deckId}/review`, { state: { jumpToCardId: card.id } });
                       } else {
-                        setCardHitDeck({ id: card.deckId, name: deckName });
+                        setCardHitDeck({ id: card.deckId, name: deckName, focusCardId: card.id });
                       }
                     }}
                     className="text-left p-3 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-primary/30 transition-colors"
@@ -552,6 +552,7 @@ export const LibraryPage = () => {
           onOpenChange={open => !open && setCardHitDeck(null)}
           deckId={cardHitDeck.id}
           deckName={cardHitDeck.name || cardHitDeck.id}
+          focusCardId={cardHitDeck.focusCardId}
         />
       )}
     </div>

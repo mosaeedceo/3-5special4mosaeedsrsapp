@@ -104,6 +104,7 @@ export const en = {
     fabAddCardTo: 'Add card to {deck}',
     fabBulkAdd: 'Bulk add cards',
     fabNewDeck: 'New deck',
+    pickDeckPrompt: 'Choose a deck',
   },
 
   // Text-to-speech (per-deck settings + review playback)

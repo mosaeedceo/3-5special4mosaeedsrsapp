@@ -379,7 +379,54 @@ export const StatsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Memory Strength & Weekly Summary - responsive grid */}
+        {/* Cards Summary — visible when scope includes cards */}
+        {scope !== 'lessons' && (data.cards || []).length > 0 && (
+          <Card className="animate-fade-in" style={{ animationDelay: '0.06s' }}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-primary" />
+                <CardTitle className="font-heading text-base">{t('flashcards.title')}</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                {t('stats.scopeCards')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const cards = data.cards || [];
+                const total = cards.length;
+                const now = Date.now();
+                const due = cards.filter(c => !c.suspended && c.fsrs && c.fsrs.state !== 'new' && new Date(c.nextReviewDate).getTime() <= now).length;
+                const mature = masteredCardsCount;
+                const stabSum = cards.reduce((s, c) => s + (c.fsrs?.stability || 0), 0);
+                const avgStab = total > 0 ? Math.round((stabSum / total) * 10) / 10 : 0;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                    <div className="p-2 rounded-md bg-muted/40">
+                      <div className="text-lg font-bold text-foreground">{total}</div>
+                      <div className="text-[11px] text-muted-foreground">{t('flashcards.cardsCount', { count: total }).replace(/\d+\s*/, '')}</div>
+                    </div>
+                    <div className="p-2 rounded-md bg-muted/40">
+                      <div className="text-lg font-bold text-primary">{due}</div>
+                      <div className="text-[11px] text-muted-foreground">{t('flashcards.due')}</div>
+                    </div>
+                    <div className="p-2 rounded-md bg-muted/40">
+                      <div className="text-lg font-bold text-success">{mature}</div>
+                      <div className="text-[11px] text-muted-foreground">{t('statsPage.mastered')}</div>
+                    </div>
+                    <div className="p-2 rounded-md bg-muted/40">
+                      <div className="text-lg font-bold text-foreground">{avgStab}</div>
+                      <div className="text-[11px] text-muted-foreground">{t('statsPage.avgStability', { days: '' }).trim()}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Memory Strength & Weekly Summary - responsive grid (lesson-only) */}
+        {scope !== 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Memory Strength Gauge */}
           <Card className="animate-fade-in" style={{ animationDelay: '0.07s' }}>
@@ -413,8 +460,10 @@ export const StatsPage = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
-        {/* Mastery & Difficulty - responsive grid */}
+        {/* Mastery & Difficulty - responsive grid (lesson-only) */}
+        {scope !== 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Enhanced Mastery Chart */}
           <Card className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
@@ -451,8 +500,10 @@ export const StatsPage = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
-        {/* Stage/Stability Distribution */}
+        {/* Stage/Stability Distribution (lesson-only) */}
+        {scope !== 'cards' && (
         <Card className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
@@ -483,9 +534,10 @@ export const StatsPage = () => {
             )}
           </CardContent>
         </Card>
+        )}
 
-        {/* Medical Board Categories Stats */}
-        {hasMedicalBoardCategories && (
+        {/* Medical Board Categories Stats (lesson-only) */}
+        {scope !== 'cards' && hasMedicalBoardCategories && (
           <Card className="animate-fade-in bg-gradient-to-br from-primary/5 to-transparent border-primary/30" style={{ animationDelay: '0.17s' }}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
@@ -558,8 +610,8 @@ export const StatsPage = () => {
           </Card>
         )}
 
-        {/* Stability Distribution for Medical Board lessons only (shown separately) */}
-        {hasMedicalBoardCategories && (
+        {/* Stability Distribution for Medical Board lessons only (lesson-only) */}
+        {scope !== 'cards' && hasMedicalBoardCategories && (
           <Card className="animate-fade-in" style={{ animationDelay: '0.18s' }}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
@@ -578,8 +630,8 @@ export const StatsPage = () => {
           </Card>
         )}
 
-        {/* Category Performance */}
-        {data.categories.length > 0 && (
+        {/* Category Performance (lesson-only) */}
+        {scope !== 'cards' && data.categories.length > 0 && (
           <Card className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">

@@ -96,6 +96,9 @@ export const LessonCard = memo(({
   const linkedDeck = lesson.linkedDeckId
     ? (storeData.decks || []).find(d => d.id === lesson.linkedDeckId)
     : undefined;
+  const linkedDeckCardCount = linkedDeck
+    ? (storeData.cards || []).filter(c => c.deckId === linkedDeck.id).length
+    : 0;
   
   // Memoize computed values to prevent recalculation on every render
   const { isToday, isCompleted, attachmentCount, hasNotes, stability, isAtRisk, retrievability, isSnoozed, dueLabel } = useMemo(() => {
@@ -287,7 +290,11 @@ export const LessonCard = memo(({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/flashcards/${linkedDeck.id}/review`);
+                    if (linkedDeckCardCount === 0) {
+                      navigate('/flashcards');
+                    } else {
+                      navigate(`/flashcards/${linkedDeck.id}/review`);
+                    }
                   }}
                   className="mt-1.5 inline-flex items-center gap-1 text-[10px] h-5 px-1.5 rounded border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                   aria-label={t('flashcards.openDeck')}

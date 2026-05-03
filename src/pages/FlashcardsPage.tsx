@@ -67,6 +67,7 @@ export const FlashcardsPage = () => {
   const [manageDeck, setManageDeck] = useState<{ id: string; name: string } | null>(null);
   const [bulkAddDeck, setBulkAddDeck] = useState<{ id: string; name: string } | null>(null);
   const [settingsDeck, setSettingsDeck] = useState<Deck | null>(null);
+  const [pickDeckMode, setPickDeckMode] = useState<'add' | 'bulk' | null>(null);
 
   const decks = data.decks || [];
 
@@ -607,37 +608,45 @@ export const FlashcardsPage = () => {
         }}
       />
 
-      {/* Floating Add Button: Add card / Bulk add / New deck */}
-      {decks.length > 0 && (() => {
+      {/* Floating Add Button: Add card / Bulk add / New deck — always visible */}
+      {(() => {
         const lastReviewedId = data.settings.lastReviewedDeckId;
+        const lastReviewedDeck = lastReviewedId ? decks.find(d => d.id === lastReviewedId) : undefined;
+        // Resolved target: explicit last-reviewed wins; otherwise undefined when multiple decks (forces picker).
         const targetDeck =
-          (lastReviewedId && decks.find(d => d.id === lastReviewedId)) ||
-          decks[0];
+          lastReviewedDeck ||
+          (decks.length === 1 ? decks[0] : undefined);
+        const needsPicker = decks.length > 1 && !targetDeck;
 
-        const fabActions: FabAction[] = [
-          {
+        const baseActions: FabAction[] = [];
+        if (decks.length > 0) {
+          baseActions.push({
             key: 'add-card',
             label: targetDeck
               ? t('flashcards.fabAddCardTo', { deck: targetDeck.name })
               : t('flashcards.fabAddCard'),
             icon: <Plus className="w-4 h-4" />,
-            disabled: !targetDeck,
-            onSelect: () => targetDeck && setAddCardTargetDeckId(targetDeck.id),
-          },
-          {
+            onSelect: () => {
+              if (targetDeck) setAddCardTargetDeckId(targetDeck.id);
+              else if (needsPicker) setPickDeckMode('add');
+            },
+          });
+          baseActions.push({
             key: 'bulk-add',
             label: t('flashcards.fabBulkAdd'),
             icon: <ClipboardPaste className="w-4 h-4" />,
-            disabled: !targetDeck,
-            onSelect: () => targetDeck && setBulkAddDeck({ id: targetDeck.id, name: targetDeck.name }),
-          },
-          {
-            key: 'new-deck',
-            label: t('flashcards.fabNewDeck'),
-            icon: <Layers className="w-4 h-4" />,
-            onSelect: () => setCreateDeckOpen(true),
-          },
-        ];
+            onSelect: () => {
+              if (targetDeck) setBulkAddDeck({ id: targetDeck.id, name: targetDeck.name });
+              else if (needsPicker) setPickDeckMode('bulk');
+            },
+          });
+        }
+        baseActions.push({
+          key: 'new-deck',
+          label: t('flashcards.fabNewDeck'),
+          icon: <Layers className="w-4 h-4" />,
+          onSelect: () => setCreateDeckOpen(true),
+        });
 
         return (
           <FloatingAddButton
@@ -645,10 +654,43 @@ export const FlashcardsPage = () => {
             position={data.settings.fabPosition || 'right'}
             coordinates={data.settings.fabCoordinates}
             onPositionChange={(pos, coords) => updateSettings({ fabPosition: pos, fabCoordinates: coords })}
-            actions={fabActions}
+            actions={baseActions}
           />
         );
       })()}
+
+      {/* Deck picker for FAB Add card / Bulk add when no last-reviewed deck */}
+      <AlertDialog open={!!pickDeckMode} onOpenChange={open => !open && setPickDeckMode(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pickDeckMode === 'bulk' ? t('flashcards.fabBulkAdd') : t('flashcards.fabAddCard')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('flashcards.pickDeckPrompt')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto -mx-2 px-2 space-y-1">
+            {decks.map(d => (
+              <button
+                key={d.id}
+                type="button"
+                className="w-full text-left p-3 rounded-lg border border-border hover:bg-accent/40 hover:border-primary/40 transition-colors"
+                onClick={() => {
+                  if (pickDeckMode === 'bulk') setBulkAddDeck({ id: d.id, name: d.name });
+                  else setAddCardTargetDeckId(d.id);
+                  setPickDeckMode(null);
+                }}
+              >
+                <div className="text-sm font-medium text-foreground truncate">{d.name}</div>
+              </button>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('flashcards.cancel')}</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
