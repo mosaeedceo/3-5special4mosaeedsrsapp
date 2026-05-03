@@ -18,6 +18,8 @@ export type SortOption = 'dueSoonest' | 'titleAZ' | 'newestFirst' | 'memoryStren
 interface SearchFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  /** When false, hide the inline search input (used when a parent already renders a global search). */
+  showSearchInput?: boolean;
   categoryFilter: string;
   onCategoryChange: (category: string) => void;
   difficultyFilter: string;
@@ -51,22 +53,25 @@ export const SearchFilters = ({
   availableTags = [],
   onClearFilters,
   hasActiveFilters,
+  showSearchInput = true,
 }: SearchFiltersProps) => {
   const { t, isRTL } = useTranslation();
 
   return (
     <div className="space-y-2">
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder={t('filters.searchPlaceholder')}
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 h-9"
-          dir={isRTL ? 'rtl' : 'ltr'}
-        />
-      </div>
+      {/* Search Bar (hidden when a parent owns the global search input) */}
+      {showSearchInput && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder={t('filters.searchPlaceholder')}
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10 h-9"
+            dir={isRTL ? 'rtl' : 'ltr'}
+          />
+        </div>
+      )}
 
       {/* Filters Row */}
       <div className="flex gap-1.5 flex-wrap">

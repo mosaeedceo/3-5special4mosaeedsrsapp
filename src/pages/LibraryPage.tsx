@@ -340,6 +340,8 @@ export const LibraryPage = () => {
         {/* Search & Filters */}
         <div className="mb-4">
           <SearchFilters
+            // Search input is owned by BrowsePage via URL `?q=`; hide the duplicate here.
+            showSearchInput={false}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             categoryFilter={categoryFilter}

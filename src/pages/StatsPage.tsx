@@ -289,14 +289,19 @@ export const StatsPage = () => {
           <Card 
             className={cn(
               "transition-all",
-              displayMastered > 0 && scope !== 'cards' && completed > 0 && "cursor-pointer hover:border-success/50 hover:shadow-sm active:scale-[0.97]",
+              displayMastered > 0 && scope === 'lessons' && completed > 0 && "cursor-pointer hover:border-success/50 hover:shadow-sm active:scale-[0.97]",
               displayMastered > 0 && scope === 'cards' && masteredCardsCount > 0 && "cursor-pointer hover:border-success/50 hover:shadow-sm active:scale-[0.97]",
+              displayMastered > 0 && scope === 'all' && (completed > 0 || masteredCardsCount > 0) && "cursor-pointer hover:border-success/50 hover:shadow-sm active:scale-[0.97]",
             )}
             onClick={() => {
               if (scope === 'cards') {
                 if (masteredCardsCount > 0) navigate('/flashcards');
-              } else if (completed > 0) {
-                navigate('/library', { state: { initialStatusFilter: 'completed' } });
+              } else if (scope === 'lessons') {
+                if (completed > 0) navigate('/library', { state: { initialStatusFilter: 'completed' } });
+              } else {
+                // 'all' scope: prefer mastered lessons; fall back to flashcards if only cards are mastered.
+                if (completed > 0) navigate('/library', { state: { initialStatusFilter: 'completed' } });
+                else if (masteredCardsCount > 0) navigate('/flashcards');
               }
             }}
           >
