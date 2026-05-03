@@ -281,6 +281,7 @@ export const ar: TranslationKeys = {
     scopeLessons: 'الدروس',
     scopeCards: 'البطاقات',
     scopeAll: 'الكل',
+    scopeLessonsOnly: 'الدروس فقط',
     heatmapLegend: 'مراجعات (دروس + بطاقات)',
   },
 

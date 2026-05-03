@@ -279,6 +279,7 @@ export const en = {
     scopeLessons: 'Lessons',
     scopeCards: 'Cards',
     scopeAll: 'All',
+    scopeLessonsOnly: 'Lessons only',
     heatmapLegend: 'Reviews (lessons + cards)',
   },
 

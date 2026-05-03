@@ -406,7 +406,9 @@ export const StatsPage = () => {
           </Card>
         )}
 
-        {/* Weekly Progress Chart */}
+        {/* Weekly Progress Chart — activityHistory aggregates lessons + cards combined,
+            so it's only meaningful (and only shown) in the All scope. */}
+        {scope === 'all' && (
         <Card className="animate-fade-in" style={{ animationDelay: '0.05s' }}>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
@@ -418,6 +420,7 @@ export const StatsPage = () => {
             <WeeklyProgressChart activityHistory={data.activityHistory} />
           </CardContent>
         </Card>
+        )}
 
         {/* Cards Summary — visible when scope includes cards */}
         {scope !== 'lessons' && (data.cards || []).length > 0 && (
@@ -485,7 +488,8 @@ export const StatsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Weekly Summary (combined activity — visible in all scopes) */}
+          {/* Weekly Summary (combined activity — only meaningful in All scope) */}
+          {scope === 'all' && (
           <Card className="animate-fade-in" style={{ animationDelay: '0.07s' }}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
@@ -500,6 +504,7 @@ export const StatsPage = () => {
               <WeeklySummaryCard activityHistory={data.activityHistory} />
             </CardContent>
           </Card>
+          )}
         </div>
 
         {/* Mastery & Difficulty - responsive grid (lesson-only) */}
@@ -514,6 +519,7 @@ export const StatsPage = () => {
               </div>
               <CardDescription className="text-xs">
                 {t('statsPage.memoryHealthOverview')}
+                {scope === 'all' && <span className="ml-1 text-muted-foreground/70">· {t('stats.scopeLessonsOnly')}</span>}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -533,6 +539,7 @@ export const StatsPage = () => {
               </div>
               <CardDescription className="text-xs">
                 {t('statsPage.byDifficulty')}
+                {scope === 'all' && <span className="ml-1 text-muted-foreground/70">· {t('stats.scopeLessonsOnly')}</span>}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -663,6 +670,7 @@ export const StatsPage = () => {
               </div>
               <CardDescription className="text-xs">
                 {t('statsPage.endlessModeLessons')}
+                {scope === 'all' && <span className="ml-1 text-muted-foreground/70">· {t('stats.scopeLessonsOnly')}</span>}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -683,6 +691,7 @@ export const StatsPage = () => {
               </div>
               <CardDescription className="text-xs">
                 {t('statsPage.progressByCategory')}
+                {scope === 'all' && <span className="ml-1 text-muted-foreground/70">· {t('stats.scopeLessonsOnly')}</span>}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -697,7 +706,8 @@ export const StatsPage = () => {
           </Card>
         )}
 
-        {/* Activity Heatmap */}
+        {/* Activity Heatmap — combined source; gated to All scope */}
+        {scope === 'all' && (
         <Card className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
@@ -712,6 +722,7 @@ export const StatsPage = () => {
             <ActivityHeatmap activityHistory={data.activityHistory} />
           </CardContent>
         </Card>
+        )}
 
       </main>
     </div>
