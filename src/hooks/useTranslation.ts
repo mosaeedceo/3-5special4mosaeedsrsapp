@@ -43,6 +43,24 @@ const interpolate = (text: string, params?: Record<string, string | number>): st
   }, text);
 };
 
+/**
+ * Standalone translation lookup for code that runs outside React (e.g.
+ * the native notification scheduler). Mirrors the t() helper: nested-key
+ * lookup, English fallback, and {placeholder} interpolation.
+ */
+export const translate = (
+  language: Language,
+  key: string,
+  params?: Record<string, string | number>,
+): string => {
+  const dict = translations[language] || translations.en;
+  const value = getNestedValue(dict, key);
+  if (value === key && language !== 'en') {
+    return interpolate(getNestedValue(translations.en, key), params);
+  }
+  return interpolate(value, params);
+};
+
 export const useTranslation = () => {
   const { data } = useLocalStorage();
   const language = (data.settings as any).language as Language || 'en';

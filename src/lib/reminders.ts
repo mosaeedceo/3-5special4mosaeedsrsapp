@@ -1,6 +1,5 @@
 import { isNativePlatform } from '@/lib/platform';
-import { en } from '@/lib/translations/en';
-import { ar } from '@/lib/translations/ar';
+import { translate } from '@/hooks/useTranslation';
 import type { Language } from '@/types/lesson';
 
 const REMINDER_ID = 1;
@@ -11,35 +10,30 @@ export interface ScheduleDailyReminderParams {
   lang: Language;
 }
 
-// Pick the right plural form key. We use a small one/other rule (matching
-// the rules in our t() helper) so the notification body reads naturally,
-// e.g. "1 lesson due today" instead of "1 lesson(s) due today".
+// Pick the right plural form key (one vs. other) and resolve it through
+// the shared translate() helper so the notification body uses the same
+// i18n pipeline as the in-app t() calls.
 const buildBody = (
   dueCount: ScheduleDailyReminderParams['dueCount'],
   lang: Language,
 ): string => {
-  const tr = lang === 'ar' ? ar : en;
-  const n = tr.notifications as Record<string, string>;
-  const fmt = (tpl: string | undefined, vars: Record<string, number>) =>
-    (tpl || n.body).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
-
   const { lessons, cards, total } = dueCount;
-  if (total <= 0) return n.bodyAllCaughtUp || n.body;
+  if (total <= 0) return translate(lang, 'notifications.bodyAllCaughtUp');
 
   if (lessons > 0 && cards > 0) {
-    if (lessons === 1 && cards === 1) return fmt(n.bodyDueOne, {});
-    if (lessons === 1) return fmt(n.bodyDueLessonsOneCardsOther, { cards });
-    if (cards === 1) return fmt(n.bodyDueLessonsOtherCardsOne, { lessons });
-    return fmt(n.bodyDueLessonsOtherCardsOther, { lessons, cards });
+    if (lessons === 1 && cards === 1) return translate(lang, 'notifications.bodyDueOne');
+    if (lessons === 1) return translate(lang, 'notifications.bodyDueLessonsOneCardsOther', { cards });
+    if (cards === 1) return translate(lang, 'notifications.bodyDueLessonsOtherCardsOne', { lessons });
+    return translate(lang, 'notifications.bodyDueLessonsOtherCardsOther', { lessons, cards });
   }
   if (lessons > 0) {
     return lessons === 1
-      ? fmt(n.bodyDueLessonsOne, {})
-      : fmt(n.bodyDueLessonsOther, { lessons });
+      ? translate(lang, 'notifications.bodyDueLessonsOne')
+      : translate(lang, 'notifications.bodyDueLessonsOther', { lessons });
   }
   return cards === 1
-    ? fmt(n.bodyDueCardsOne, {})
-    : fmt(n.bodyDueCardsOther, { cards });
+    ? translate(lang, 'notifications.bodyDueCardsOne')
+    : translate(lang, 'notifications.bodyDueCardsOther', { cards });
 };
 
 /**
@@ -58,11 +52,10 @@ export const scheduleDailyReminder = async (
     const [hours, minutes] = params.time.split(':').map(Number);
     if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return false;
     await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
-    const tr = params.lang === 'ar' ? ar : en;
     await LocalNotifications.schedule({
       notifications: [{
         id: REMINDER_ID,
-        title: tr.notifications.title,
+        title: translate(params.lang, 'notifications.title'),
         body: buildBody(params.dueCount, params.lang),
         schedule: { on: { hour: hours, minute: minutes }, repeats: true, allowWhileIdle: true },
       }],

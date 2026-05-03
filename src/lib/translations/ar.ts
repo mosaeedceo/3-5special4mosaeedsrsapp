@@ -260,9 +260,6 @@ export const ar: TranslationKeys = {
   notifications: {
     title: 'وقت المراجعة!',
     body: 'حان وقت مراجعة دروسك والحفاظ على سلسلة تعلمك.',
-    bodyDue: '{lessons} درس و{cards} بطاقة مستحقة اليوم.',
-    bodyDueLessonsOnly: '{lessons} درس مستحق اليوم.',
-    bodyDueCardsOnly: '{cards} بطاقة مستحقة اليوم.',
     bodyDueOne: 'درس واحد وبطاقة واحدة مستحقة اليوم.',
     bodyDueLessonsOne: 'درس واحد مستحق اليوم.',
     bodyDueCardsOne: 'بطاقة واحدة مستحقة اليوم.',

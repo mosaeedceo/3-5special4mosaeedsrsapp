@@ -258,9 +258,6 @@ export const en = {
   notifications: {
     title: 'Study Time!',
     body: 'Time to review your lessons and keep your streak alive.',
-    bodyDue: '{lessons} lesson(s) and {cards} card(s) due today.',
-    bodyDueLessonsOnly: '{lessons} lesson(s) due today.',
-    bodyDueCardsOnly: '{cards} flashcard(s) due today.',
     bodyDueOne: '1 lesson and 1 card due today.',
     bodyDueLessonsOne: '1 lesson due today.',
     bodyDueCardsOne: '1 flashcard due today.',
