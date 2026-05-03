@@ -9,7 +9,12 @@ import { DisplayModeSelector } from '@/components/DisplayModeSelector';
 import { DebugStorageDialog } from '@/components/DebugStorageDialog';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { SessionHistory } from '@/components/SessionHistory';
-import { Settings, Download, Upload, Sun, Moon, Monitor, Palette, LayoutGrid, Bug, Brain, GraduationCap, Paperclip, Languages, Clock, History, BookOpen, ChevronRight, ChevronLeft, Bell, BellOff, Volume2 } from 'lucide-react';
+import { Settings, Download, Upload, Sun, Moon, Monitor, Palette, LayoutGrid, Bug, Brain, GraduationCap, Paperclip, Languages, Clock, History, BookOpen, ChevronRight, ChevronLeft, Bell, BellOff, Volume2, ShieldAlert } from 'lucide-react';
+import {
+  scheduleDailyReminder,
+  cancelReminder,
+  requestReminderPermission,
+} from '@/lib/reminders';
 import { InstallVoicesDialog } from '@/components/InstallVoicesDialog';
 import { isInstallSupported } from '@/lib/ttsInstaller';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { ColorTheme, DisplayMode } from '@/types/lesson';
 
 export const SettingsPage = () => {
-  const { data, updateSettings, exportData, importData } = useLocalStorage();
+  const { data, updateSettings, exportData, importData, getTodayDueCount } = useLocalStorage();
   const [isExporting, setIsExporting] = useState(false);
   const [installVoicesOpen, setInstallVoicesOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -451,19 +456,19 @@ export const SettingsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Audio / TTS Voices */}
+        {/* Study & Audio (TTS voices + leech threshold) */}
         <Card className="animate-fade-in" style={{ animationDelay: '0.27s' }}>
           <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
             <div className="flex items-center gap-2">
               <Volume2 className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
-              <CardTitle className="font-heading text-base sm:text-lg">{t('tts.installVoices')}</CardTitle>
+              <CardTitle className="font-heading text-base sm:text-lg">{t('settings.studyAndAudio')}</CardTitle>
             </div>
             <CardDescription className="text-xs sm:text-sm">
               {isInstallSupported() ? t('tts.installVoicesDesc') : t('tts.webHint')}
             </CardDescription>
           </CardHeader>
-          {isInstallSupported() && (
-            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-5">
+            {isInstallSupported() && (
               <Button
                 onClick={() => setInstallVoicesOpen(true)}
                 variant="outline"
@@ -472,8 +477,44 @@ export const SettingsPage = () => {
                 <Download className="w-4 h-4 mr-2" />
                 {t('tts.installVoices')}
               </Button>
-            </CardContent>
-          )}
+            )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ShieldAlert className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {t('settings.leechThreshold')}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {(data.settings.leechThreshold ?? 0) > 0
+                    ? t('settings.leechThresholdValue', {
+                        count: data.settings.leechThreshold ?? 0,
+                      })
+                    : t('settings.leechThresholdOff')}
+                </span>
+              </div>
+              <Slider
+                min={3}
+                max={15}
+                step={1}
+                value={[
+                  (data.settings.leechThreshold ?? 0) === 0
+                    ? 3
+                    : Math.max(3, Math.min(15, data.settings.leechThreshold ?? 8)),
+                ]}
+                onValueChange={([v]) => {
+                  // Map slider position 3 → "Off" (0), 4..15 → that threshold.
+                  const next = v <= 3 ? 0 : v;
+                  updateSettings({ leechThreshold: next });
+                }}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('settings.leechThresholdHint')}
+              </p>
+            </div>
+          </CardContent>
         </Card>
 
         <InstallVoicesDialog open={installVoicesOpen} onOpenChange={setInstallVoicesOpen} />
@@ -506,38 +547,18 @@ export const SettingsPage = () => {
                   const newValue = !data.settings.reminderEnabled;
                   updateSettings({ reminderEnabled: newValue });
                   if (newValue) {
-                    try {
-                      const { Capacitor } = await import('@capacitor/core');
-                      if (Capacitor.isNativePlatform()) {
-                        const { LocalNotifications } = await import('@capacitor/local-notifications');
-                        const perm = await LocalNotifications.requestPermissions();
-                        if (perm.display === 'granted') {
-                          await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
-                          const [hours, minutes] = (data.settings.reminderTime || '08:00').split(':').map(Number);
-                          const now = new Date();
-                          const scheduleAt = new Date();
-                          scheduleAt.setHours(hours, minutes, 0, 0);
-                          if (scheduleAt <= now) scheduleAt.setDate(scheduleAt.getDate() + 1);
-                          await LocalNotifications.schedule({
-                            notifications: [{
-                              id: 1,
-                              title: t('notifications.title'),
-                              body: t('notifications.body'),
-                              schedule: { at: scheduleAt, repeats: true, every: 'day' },
-                            }],
-                          });
-                          toast.success(t('settings.reminderSet', { time: data.settings.reminderTime || '08:00' }));
-                        }
-                      }
-                    } catch { }
+                    const granted = await requestReminderPermission();
+                    if (granted) {
+                      const time = data.settings.reminderTime || '08:00';
+                      const ok = await scheduleDailyReminder({
+                        time,
+                        dueCount: getTodayDueCount(),
+                        lang: data.settings.language,
+                      });
+                      if (ok) toast.success(t('settings.reminderSet', { time }));
+                    }
                   } else {
-                    try {
-                      const { Capacitor } = await import('@capacitor/core');
-                      if (Capacitor.isNativePlatform()) {
-                        const { LocalNotifications } = await import('@capacitor/local-notifications');
-                        await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
-                      }
-                    } catch { }
+                    await cancelReminder();
                   }
                 }}
                 className={cn(
@@ -561,27 +582,14 @@ export const SettingsPage = () => {
                   type="time"
                   value={data.settings.reminderTime || '08:00'}
                   onChange={async (e) => {
-                    updateSettings({ reminderTime: e.target.value });
-                    try {
-                      const { Capacitor } = await import('@capacitor/core');
-                      if (Capacitor.isNativePlatform()) {
-                        const { LocalNotifications } = await import('@capacitor/local-notifications');
-                        await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
-                        const [hours, minutes] = e.target.value.split(':').map(Number);
-                        const scheduleAt = new Date();
-                        scheduleAt.setHours(hours, minutes, 0, 0);
-                        if (scheduleAt <= new Date()) scheduleAt.setDate(scheduleAt.getDate() + 1);
-                        await LocalNotifications.schedule({
-                          notifications: [{
-                            id: 1,
-                            title: t('notifications.title'),
-                            body: t('notifications.body'),
-                            schedule: { at: scheduleAt, repeats: true, every: 'day' },
-                          }],
-                        });
-                        toast.success(t('settings.reminderSet', { time: e.target.value }));
-                      }
-                    } catch { }
+                    const time = e.target.value;
+                    updateSettings({ reminderTime: time });
+                    const ok = await scheduleDailyReminder({
+                      time,
+                      dueCount: getTodayDueCount(),
+                      lang: data.settings.language,
+                    });
+                    if (ok) toast.success(t('settings.reminderSet', { time }));
                   }}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary"
                 />

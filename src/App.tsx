@@ -15,9 +15,8 @@ import { isNativePlatform } from "@/lib/platform";
 import { loadTheme, applyTheme } from "@/lib/themeStorage";
 import { incrementQuoteIndex } from "@/lib/quoteStorage";
 import { useLanguage } from "@/hooks/useTranslation";
-import { en } from "@/lib/translations/en";
-import { ar } from "@/lib/translations/ar";
 import { LocalStorageProvider, useLocalStorage } from "@/hooks/useLocalStorage";
+import { scheduleDailyReminder } from "@/lib/reminders";
 import { SessionHistoryProvider } from "@/contexts/SessionHistoryContext";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -115,38 +114,63 @@ const RedirectToBrowse = ({ view }: { view: 'library' | 'categories' }) => {
 };
 
 const AppContent = () => {
-  const { data } = useLocalStorage();
+  const { data, getTodayDueCount } = useLocalStorage();
 
   // Increment quote index on each app launch
   useEffect(() => {
     incrementQuoteIndex();
   }, []);
 
-  // T010: Auto-reschedule daily notification on app load (native only)
+  // Auto-reschedule the daily notification (native only) so its body reflects
+  // the current due-count whenever:
+  //   - the reminder is toggled on / its time changes / language changes
+  //   - the due count changes (a review just finished, a lesson was added)
+  //   - the app goes to background / hides (so the next-fire body is fresh
+  //     even if the user doesn't open the app again)
+  const dueTotal = getTodayDueCount().total;
   useEffect(() => {
-    if (!isNativePlatform() || !data.settings.reminderEnabled || !data.settings.reminderTime) return;
-    const reschedule = async () => {
-      try {
-        const { LocalNotifications } = await import('@capacitor/local-notifications');
-        const perm = await LocalNotifications.checkPermissions();
-        if (perm.display !== 'granted') return;
-        const [hours, minutes] = data.settings.reminderTime!.split(':').map(Number);
-        await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
-        const lang = data.settings.language === 'ar' ? ar : en;
-        await LocalNotifications.schedule({
-          notifications: [{
-            id: 1,
-            title: lang.notifications.title,
-            body: lang.notifications.body,
-            schedule: { on: { hour: hours, minute: minutes }, repeats: true, allowWhileIdle: true },
-          }],
+    if (!isNativePlatform()) return;
+    if (!data.settings.reminderEnabled || !data.settings.reminderTime) return;
+    scheduleDailyReminder({
+      time: data.settings.reminderTime,
+      dueCount: getTodayDueCount(),
+      lang: data.settings.language,
+    });
+  }, [
+    data.settings.reminderEnabled,
+    data.settings.reminderTime,
+    data.settings.language,
+    dueTotal,
+    getTodayDueCount,
+  ]);
+
+  // Refresh the reminder body when the app is suspended/hidden so the user
+  // sees an accurate count even if they don't reopen the app before the
+  // notification fires.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    if (!data.settings.reminderEnabled || !data.settings.reminderTime) return;
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') {
+        scheduleDailyReminder({
+          time: data.settings.reminderTime!,
+          dueCount: getTodayDueCount(),
+          lang: data.settings.language,
         });
-      } catch {
-        // Silently fail — notification rescheduling is non-critical
       }
     };
-    reschedule();
-  }, [data.settings.reminderEnabled, data.settings.reminderTime]);
+    window.addEventListener('pagehide', onHide);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, [
+    data.settings.reminderEnabled,
+    data.settings.reminderTime,
+    data.settings.language,
+    getTodayDueCount,
+  ]);
 
 
   return (

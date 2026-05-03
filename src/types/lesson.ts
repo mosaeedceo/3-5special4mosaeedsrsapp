@@ -95,6 +95,11 @@ export interface Settings {
   hasSeenOnboarding?: boolean;
   reminderEnabled?: boolean;
   reminderTime?: string; // HH:MM 24-hour format
+  /**
+   * Auto-suspend a card once its FSRS lapse count reaches this threshold.
+   * 0 / undefined disables. Default: 8.
+   */
+  leechThreshold?: number;
   lastTtsVoiceByLang?: Record<string, string>; // BCP-47 lang -> last picked voiceURI
   lastReviewedDeckId?: string; // Last deck the user reviewed (for FAB's "Add card" default)
 }
@@ -177,4 +182,5 @@ export const DEFAULT_SETTINGS: Settings = {
   hasSeenOnboarding: false,
   reminderEnabled: false,
   reminderTime: '08:00',
+  leechThreshold: 8,
 };

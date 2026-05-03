@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pencil, Trash2, Plus, ClipboardPaste } from 'lucide-react';
+import { Pencil, Trash2, Plus, ClipboardPaste, Pause, Play } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +57,7 @@ export const CardManagerDialog = ({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all');
   const cardRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const lastFocusedRef = useRef<string | null>(null);
 
@@ -83,10 +84,41 @@ export const CardManagerDialog = ({
     };
   }, [open, focusCardId]);
 
-  const deckCards = useMemo(
+  const allDeckCards = useMemo(
     () => (data.cards || []).filter(c => c.deckId === deckId),
     [data.cards, deckId],
   );
+
+  const deckCards = useMemo(() => {
+    if (statusFilter === 'active') return allDeckCards.filter(c => !c.suspended);
+    if (statusFilter === 'suspended') return allDeckCards.filter(c => !!c.suspended);
+    return allDeckCards;
+  }, [allDeckCards, statusFilter]);
+
+  const suspendedCount = useMemo(
+    () => allDeckCards.filter(c => c.suspended).length,
+    [allDeckCards],
+  );
+
+  // If a focus card lands in a filter that hides it, switch to All so it
+  // becomes visible.
+  useEffect(() => {
+    if (!focusCardId) return;
+    const target = allDeckCards.find(c => c.id === focusCardId);
+    if (!target) return;
+    if (statusFilter === 'active' && target.suspended) setStatusFilter('all');
+    if (statusFilter === 'suspended' && !target.suspended) setStatusFilter('all');
+    // We only want to reconcile once per focus change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusCardId, allDeckCards]);
+
+  const toggleSuspend = (card: FlashCard) => {
+    const next = !card.suspended;
+    updateCard(card.id, { suspended: next });
+    toast({
+      title: next ? t('flashcards.cardSuspended') : t('flashcards.cardUnsuspended'),
+    });
+  };
 
   const openCreate = () => {
     setEditingCard(null);
@@ -218,6 +250,39 @@ export const CardManagerDialog = ({
             </div>
           </div>
 
+          {/* Status filter (segmented). Hidden when there are no suspended
+              cards to keep the dialog tidy for the common case. */}
+          {(suspendedCount > 0 || statusFilter !== 'all') && (
+            <div
+              role="tablist"
+              aria-label={t('flashcards.statusFilterLabel')}
+              className="inline-flex rounded-md border border-border bg-muted p-0.5 self-start"
+            >
+              {(['all', 'active', 'suspended'] as const).map(key => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={statusFilter === key}
+                  onClick={() => setStatusFilter(key)}
+                  className={cn(
+                    'px-2.5 py-1 text-xs rounded-sm transition-colors min-h-[28px]',
+                    statusFilter === key
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {key === 'all' && t('flashcards.statusAll')}
+                  {key === 'active' && t('flashcards.statusActive')}
+                  {key === 'suspended' &&
+                    `${t('flashcards.statusSuspended')}${
+                      suspendedCount > 0 ? ` (${suspendedCount})` : ''
+                    }`}
+                </button>
+              ))}
+            </div>
+          )}
+
           <ScrollArea className="flex-1 -mx-6 px-6 max-h-[55vh]">
             {deckCards.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
@@ -242,22 +307,34 @@ export const CardManagerDialog = ({
                     <div className={cn('flex items-start gap-2', isRTL && 'flex-row-reverse')}>
                       <div className={cn('flex-1 min-w-0', isRTL && 'text-right')}>
                         <div
-                          className="text-sm font-medium line-clamp-2 anki-card-content"
+                          className={cn(
+                            'text-sm font-medium line-clamp-2 anki-card-content',
+                            card.suspended && 'opacity-60',
+                          )}
                           dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(card.front) }}
                         />
                         <div
-                          className="text-xs text-muted-foreground line-clamp-2 mt-1 anki-card-content"
+                          className={cn(
+                            'text-xs text-muted-foreground line-clamp-2 mt-1 anki-card-content',
+                            card.suspended && 'opacity-60',
+                          )}
                           dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(card.back) }}
                         />
-                        {card.tags && card.tags.length > 0 && (
-                          <div className={cn('flex flex-wrap gap-1 mt-1.5', isRTL && 'justify-end')}>
-                            {card.tags.map(tag => (
-                              <Badge key={tag} variant="outline" className="text-[10px] font-normal">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+                        <div className={cn('flex flex-wrap gap-1 mt-1.5', isRTL && 'justify-end')}>
+                          {card.suspended && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-normal border-warning/50 text-warning bg-warning/10"
+                            >
+                              {t('flashcards.suspendedBadge')}
+                            </Badge>
+                          )}
+                          {card.tags?.map(tag => (
+                            <Badge key={tag} variant="outline" className="text-[10px] font-normal">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1 shrink-0">
                         <Button
@@ -268,6 +345,28 @@ export const CardManagerDialog = ({
                           aria-label={t('flashcards.editCard')}
                         >
                           <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => toggleSuspend(card)}
+                          aria-label={
+                            card.suspended
+                              ? t('flashcards.unsuspendCard')
+                              : t('flashcards.suspendCard')
+                          }
+                          title={
+                            card.suspended
+                              ? t('flashcards.unsuspendCard')
+                              : t('flashcards.suspendCard')
+                          }
+                        >
+                          {card.suspended ? (
+                            <Play className="w-3.5 h-3.5" />
+                          ) : (
+                            <Pause className="w-3.5 h-3.5" />
+                          )}
                         </Button>
                         <Button
                           variant="ghost"

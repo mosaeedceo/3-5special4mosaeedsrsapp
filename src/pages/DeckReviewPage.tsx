@@ -246,7 +246,26 @@ export const DeckReviewPage = () => {
 
   const handleRate = (rating: FSRSRating) => {
     if (!currentCard) return;
-    reviewCard(currentCard.id, rating);
+    const result = reviewCard(currentCard.id, rating);
+    if (result?.leechSuspended && deckId) {
+      const suspendedId = currentCard.id;
+      toast({
+        title: t('flashcards.leechToast'),
+        description: t('flashcards.leechToastDesc'),
+        action: (
+          <ToastAction
+            altText={t('flashcards.leechToastAction')}
+            onClick={() =>
+              navigate(`/flashcards`, {
+                state: { openManagerDeckId: deckId, focusCardId: suspendedId },
+              })
+            }
+          >
+            {t('flashcards.leechToastAction')}
+          </ToastAction>
+        ),
+      });
+    }
     setPosition(p => p + 1);
   };
 

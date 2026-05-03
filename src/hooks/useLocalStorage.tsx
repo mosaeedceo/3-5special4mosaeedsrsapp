@@ -1302,7 +1302,11 @@ const useLocalStorageInternal = () => {
     }));
   }, []);
 
-  const reviewCard = useCallback((cardId: string, rating: FSRSRating) => {
+  const reviewCard = useCallback((
+    cardId: string,
+    rating: FSRSRating,
+  ): { leechSuspended: boolean } => {
+    let leechSuspended = false;
     setData(prev => {
       const cards = prev.cards || [];
       const card = cards.find(c => c.id === cardId);
@@ -1316,11 +1320,21 @@ const useLocalStorageInternal = () => {
         stability: fsrsState.stability,
         difficulty: fsrsState.difficulty,
       };
+      // Auto-suspend leeches: once lapses reach the configured threshold,
+      // the card is suspended so it stops appearing in reviews until the
+      // user manually unsuspends it from the card manager.
+      const threshold = prev.settings.leechThreshold ?? 0;
+      const shouldSuspend =
+        threshold > 0 &&
+        !card.suspended &&
+        fsrsState.lapses >= threshold;
+      if (shouldSuspend) leechSuspended = true;
       const updatedCard: Card = {
         ...card,
         fsrs: fsrsState,
         nextReviewDate: nextReviewDate.toISOString(),
         reviewHistory: [...(card.reviewHistory || []), historyEntry],
+        ...(shouldSuspend ? { suspended: true } : {}),
       };
       return {
         ...prev,
@@ -1332,11 +1346,44 @@ const useLocalStorageInternal = () => {
     // the activity heatmap, and the weekly progress chart, just like
     // lesson reviews do (see reviewLesson / markLessonDone).
     recordActivity();
+    return { leechSuspended };
   }, [recordActivity]);
 
   const getDeckCards = useCallback((deckId: string): Card[] => {
     return (data.cards || []).filter(c => c.deckId === deckId);
   }, [data.cards]);
+
+  /**
+   * Live count of items due today that the daily reminder should mention.
+   * Mirrors the home screen: non-snoozed lessons due today/overdue, plus
+   * non-suspended cards across all decks that are due now (or new).
+   */
+  const getTodayDueCount = useCallback((): {
+    lessons: number;
+    cards: number;
+    total: number;
+  } => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lessonsCount = data.lessons.filter(lesson => {
+      if (lesson.completed) return false;
+      if (isLessonSnoozed(lesson)) return false;
+      const reviewDate = new Date(lesson.nextReviewDate);
+      reviewDate.setHours(0, 0, 0, 0);
+      return reviewDate <= today;
+    }).length;
+    const now = new Date();
+    let cardsCount = 0;
+    for (const c of data.cards || []) {
+      if (c.suspended) continue;
+      if (!c.fsrs || c.fsrs.state === 'new') {
+        cardsCount += 1;
+      } else if (new Date(c.nextReviewDate) <= now) {
+        cardsCount += 1;
+      }
+    }
+    return { lessons: lessonsCount, cards: cardsCount, total: lessonsCount + cardsCount };
+  }, [data.lessons, data.cards, isLessonSnoozed]);
 
   const getDueCards = useCallback((deckId: string): Card[] => {
     const now = new Date();
@@ -1413,6 +1460,7 @@ const useLocalStorageInternal = () => {
     reviewCard,
     getDeckCards,
     getDueCards,
+    getTodayDueCount,
     getLessonsForDeck,
   };
 };

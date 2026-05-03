@@ -77,6 +77,18 @@ export const ar: TranslationKeys = {
     cardAdded: 'تمت إضافة البطاقة',
     cardUpdated: 'تم تحديث البطاقة',
     cardDeleted: 'تم حذف البطاقة',
+    cardSuspended: 'تم تعليق البطاقة',
+    cardUnsuspended: 'تم إلغاء تعليق البطاقة',
+    suspendCard: 'تعليق',
+    unsuspendCard: 'إلغاء التعليق',
+    suspendedBadge: 'معلَّقة',
+    statusFilterLabel: 'تصفية حسب الحالة',
+    statusAll: 'الكل',
+    statusActive: 'نشطة',
+    statusSuspended: 'معلَّقة',
+    leechToast: 'تم تعليق البطاقة (متعثرة)',
+    leechToastDesc: 'كثرة النسيان — تم تعليق هذه البطاقة تلقائيًا.',
+    leechToastAction: 'فتح إدارة البطاقات',
     confirmDeleteCard: 'حذف البطاقة؟',
     confirmDeleteCardDesc: 'سيؤدي هذا إلى حذف البطاقة نهائيًا من الرزمة.',
     bulkAdd: 'إضافة جماعية',
@@ -248,6 +260,10 @@ export const ar: TranslationKeys = {
   notifications: {
     title: 'وقت المراجعة!',
     body: 'حان وقت مراجعة دروسك والحفاظ على سلسلة تعلمك.',
+    bodyDue: '{lessons} درس و{cards} بطاقة مستحقة اليوم.',
+    bodyDueLessonsOnly: '{lessons} درس مستحق اليوم.',
+    bodyDueCardsOnly: '{cards} بطاقة مستحقة اليوم.',
+    bodyAllCaughtUp: 'أنهيت مراجعاتك — حافظ على سلسلتك!',
   },
 
   // Stats page
@@ -430,6 +446,13 @@ export const ar: TranslationKeys = {
     reminderTime: 'وقت التذكير',
     reminderWebNote: 'ثبّت التطبيق على جهازك لاستقبال إشعارات الدفع',
     reminderSet: 'تم ضبط التذكير عند {time} يومياً',
+
+    // Study & Audio combined card
+    studyAndAudio: 'الدراسة والصوت',
+    leechThreshold: 'عتبة البطاقات المتعثرة',
+    leechThresholdHint: 'تعليق البطاقة تلقائيًا بعد عدد النسيان (ضغطات "مجدداً"). يمكنك إلغاء التعليق من إدارة البطاقات.',
+    leechThresholdValue: '{count} نسيان',
+    leechThresholdOff: 'متوقف',
     
     // FAB Position
     fabPosition: 'موضع زر الإضافة',

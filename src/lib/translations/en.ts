@@ -75,6 +75,18 @@ export const en = {
     cardAdded: 'Card added',
     cardUpdated: 'Card updated',
     cardDeleted: 'Card deleted',
+    cardSuspended: 'Card suspended',
+    cardUnsuspended: 'Card unsuspended',
+    suspendCard: 'Suspend',
+    unsuspendCard: 'Unsuspend',
+    suspendedBadge: 'Suspended',
+    statusFilterLabel: 'Filter by status',
+    statusAll: 'All',
+    statusActive: 'Active',
+    statusSuspended: 'Suspended',
+    leechToast: 'Card suspended (leech)',
+    leechToastDesc: 'Too many lapses — this card was auto-suspended.',
+    leechToastAction: 'Open card manager',
     confirmDeleteCard: 'Delete card?',
     confirmDeleteCardDesc: 'This will permanently remove this card from the deck.',
     bulkAdd: 'Bulk add',
@@ -246,6 +258,10 @@ export const en = {
   notifications: {
     title: 'Study Time!',
     body: 'Time to review your lessons and keep your streak alive.',
+    bodyDue: '{lessons} lesson(s) and {cards} card(s) due today.',
+    bodyDueLessonsOnly: '{lessons} lesson(s) due today.',
+    bodyDueCardsOnly: '{cards} flashcard(s) due today.',
+    bodyAllCaughtUp: "You're all caught up — keep your streak alive!",
   },
 
   // Stats page
@@ -428,6 +444,13 @@ export const en = {
     reminderTime: 'Reminder time',
     reminderWebNote: 'Install the app on your device to receive push notifications',
     reminderSet: 'Reminder set for {time} daily',
+
+    // Study & Audio combined card
+    studyAndAudio: 'Study & Audio',
+    leechThreshold: 'Leech threshold',
+    leechThresholdHint: 'Auto-suspend a card after this many lapses (Again presses). You can unsuspend leeches from the card manager.',
+    leechThresholdValue: '{count} lapses',
+    leechThresholdOff: 'Off',
     
     // FAB Position
     fabPosition: 'Add Button Position',

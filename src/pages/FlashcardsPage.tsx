@@ -1,5 +1,5 @@
-import { useRef, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, Volume2, BookOpen } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
@@ -64,12 +64,27 @@ export const FlashcardsPage = () => {
   const [createDeckOpen, setCreateDeckOpen] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
   const [addCardTargetDeckId, setAddCardTargetDeckId] = useState<string | null>(null);
-  const [manageDeck, setManageDeck] = useState<{ id: string; name: string } | null>(null);
+  const [manageDeck, setManageDeck] = useState<{ id: string; name: string; focusCardId?: string } | null>(null);
+  const location = useLocation();
   const [bulkAddDeck, setBulkAddDeck] = useState<{ id: string; name: string } | null>(null);
   const [settingsDeck, setSettingsDeck] = useState<Deck | null>(null);
   const [pickDeckMode, setPickDeckMode] = useState<'add' | 'bulk' | null>(null);
 
   const decks = data.decks || [];
+
+  // Open the card manager pre-targeted at a specific deck/card when arriving
+  // here via the leech-suspended toast in DeckReviewPage.
+  useEffect(() => {
+    const state = location.state as
+      | { openManagerDeckId?: string; focusCardId?: string }
+      | null;
+    if (!state?.openManagerDeckId) return;
+    const deck = (data.decks || []).find(d => d.id === state.openManagerDeckId);
+    if (!deck) return;
+    setManageDeck({ id: deck.id, name: deck.name, focusCardId: state.focusCardId });
+    // Clear the navigation state so this only fires once.
+    navigate(location.pathname, { replace: true });
+  }, [location.state, location.pathname, data.decks, navigate]);
 
   const stats = useMemo(() => {
     const map = new Map<string, { total: number; due: number; isNew: number }>();
@@ -585,6 +600,7 @@ export const FlashcardsPage = () => {
           onOpenChange={open => !open && setManageDeck(null)}
           deckId={manageDeck.id}
           deckName={manageDeck.name}
+          focusCardId={manageDeck.focusCardId}
         />
       )}
 
