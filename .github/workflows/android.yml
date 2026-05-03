@@ -3,6 +3,10 @@ on:
   push:
     branches: [ main ]
 
+env:
+  APP_VERSION_NAME: "3.3.2"
+  APP_VERSION_CODE: "8"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,11 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install Dependencies
-        run: |
-          npm install --legacy-peer-deps --force
-          npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/assets @capacitor/filesystem @capacitor/preferences @capacitor-community/file-opener capacitor-voice-recorder --legacy-peer-deps --force
+        run: npm ci --legacy-peer-deps
 
       - name: Build Web Project
         run: npm run build
@@ -32,32 +35,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Prepare Android Platform
+      - name: Sync Capacitor (preserves checked-in android/ sources)
         run: |
-          rm -rf android
-          npx cap add android
           npx cap copy android
-          npx cap sync
+          npx cap sync android
 
-      - name: Set App Version to 3.3.1
+      - name: Set App Version
         run: |
           FILE="android/app/build.gradle"
-          # تحديث اسم الإصدار الظاهر للمستخدم
-          sed -i 's/versionName "1.0"/versionName "3.3.1"/' $FILE
-          # زيادة الرقم الداخلي (7) ليقبل التابلت التحديث فوق النسخة القديمة
-          sed -i 's/versionCode 1/versionCode 7/' $FILE
+          sed -i "s/versionName \"[^\"]*\"/versionName \"${APP_VERSION_NAME}\"/" "$FILE"
+          sed -i "s/versionCode [0-9][0-9]*/versionCode ${APP_VERSION_CODE}/" "$FILE"
+          echo "----- versions in build.gradle -----"
+          grep -E "versionName|versionCode" "$FILE"
 
       - name: Generate App Icons
         run: npx @capacitor/assets generate --android || echo "Icon generation failed"
-
-      - name: Force Inject Permissions
-        run: |
-          FILE="android/app/src/main/AndroidManifest.xml"
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $FILE
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $FILE
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' $FILE
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' $FILE
-          sed -i 's/<application/<application android:requestLegacyExternalStorage="true"/' $FILE
 
       - name: Build APK
         run: |
@@ -68,5 +60,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MedStudy-v3.3.1
+          name: MedStudy-v${{ env.APP_VERSION_NAME }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
