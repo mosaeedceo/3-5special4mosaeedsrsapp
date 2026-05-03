@@ -48,7 +48,7 @@ export const FlashcardsPage = () => {
   const navigate = useNavigate();
   const { data, addDeck, deleteDeck, renameDeck, updateDeck, addCards, getDeckCards } =
     useLocalStorage();
-  const { containerClass } = useDisplayMode(data.settings.displayMode);
+  const { containerClass, isTabletMode } = useDisplayMode(data.settings.displayMode);
   const { t, isRTL } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -325,7 +325,7 @@ export const FlashcardsPage = () => {
         onChange={handleFileChange}
       />
 
-      <main className={cn(containerClass, 'mx-auto px-4 py-5 space-y-3')}>
+      <main className={cn(containerClass, 'mx-auto px-4 py-5')}>
         {decks.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-10 flex flex-col items-center text-center gap-3">
@@ -348,11 +348,12 @@ export const FlashcardsPage = () => {
             </CardContent>
           </Card>
         ) : (
-          decks.map(deck => {
+          <div className={cn(isTabletMode ? 'grid grid-cols-2 gap-3' : 'space-y-3')}>
+          {decks.map(deck => {
             const s = stats.get(deck.id) || { total: 0, due: 0, isNew: 0 };
             return (
-              <Card key={deck.id} className="overflow-hidden">
-                <CardContent className="p-4">
+              <Card key={deck.id} className="overflow-hidden h-full flex flex-col">
+                <CardContent className="p-4 flex-1 flex flex-col">
                   <div className={cn('flex items-start gap-3', isRTL && 'flex-row-reverse')}>
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Layers className="w-5 h-5 text-primary" />
@@ -414,7 +415,7 @@ export const FlashcardsPage = () => {
                   </div>
 
                   <Button
-                    className="w-full mt-3 h-9"
+                    className="w-full mt-auto pt-0 h-9"
                     variant={s.due > 0 || s.isNew > 0 ? 'default' : 'outline'}
                     disabled={s.total === 0}
                     onClick={() => navigate(`/flashcards/${deck.id}/review`)}
@@ -425,7 +426,8 @@ export const FlashcardsPage = () => {
                 </CardContent>
               </Card>
             );
-          })
+          })}
+          </div>
         )}
       </main>
 
