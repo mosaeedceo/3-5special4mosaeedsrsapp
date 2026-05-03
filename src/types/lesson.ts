@@ -145,13 +145,43 @@ export interface Card {
   ttsLangBack?: string;
 }
 
+export type EasyDayLevel = 'min' | 'reduced' | 'normal';
+
+/**
+ * Multiplier applied to the daily review allowance for the matching weekday.
+ * - normal: full allowance (1.0)
+ * - reduced: half allowance
+ * - min: a quarter of the allowance (still > 0 so urgent cards aren't lost)
+ */
+export const EASY_DAY_SCALE: Record<EasyDayLevel, number> = {
+  normal: 1,
+  reduced: 0.5,
+  min: 0.25,
+};
+
+/** Today-only bumps from the Custom Study flow. Cleared on local-day rollover. */
+export interface DeckTodayBumps {
+  date: string;            // YYYY-MM-DD (local)
+  extraNew?: number;       // Additional new cards allowed today
+  extraReviews?: number;   // Additional review cards allowed today
+}
+
 export interface Deck {
   id: string;
   name: string;
   description?: string;
   dateAdded: string;
-  newPerDay?: number;       // Default 20
-  reviewsPerDay?: number;   // Default 200
+  // -- Daily limits (undefined = use global default) --
+  newPerDay?: number;                  // Default 20
+  reviewsPerDay?: number;              // Default 200
+  newCardsIgnoreReviewLimit?: boolean; // When true, new cards aren't counted against reviewsPerDay
+  limitsStartFromTop?: boolean;        // When true, new cards are shown before reviews
+  todayBumps?: DeckTodayBumps;         // One-day-only limit increases from Custom Study
+  // -- FSRS overrides (undefined = use global setting) --
+  desiredRetentionOverride?: number;   // 0.7 - 0.97
+  leechThresholdOverride?: number;     // 0 = off, otherwise lapses count
+  // -- Easy Days: per-weekday review-load scaling (Mon..Sun) --
+  easyDays?: EasyDayLevel[];           // length 7 when set
   source?: 'anki' | 'csv' | 'manual';
   // Text-to-speech preferences (optional, per-deck)
   ttsFrontLang?: string;     // BCP-47 e.g. "de-DE"; empty/undefined = disabled

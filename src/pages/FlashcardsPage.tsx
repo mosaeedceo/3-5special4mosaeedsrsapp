@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils';
 import { CardEditorDialog } from '@/components/CardEditorDialog';
 import { CardManagerDialog } from '@/components/CardManagerDialog';
 import { BulkAddCardsDialog } from '@/components/BulkAddCardsDialog';
-import { DeckSettingsDialog } from '@/components/DeckSettingsDialog';
+import { DeckSettingsDialog, type CustomStudyAction } from '@/components/DeckSettingsDialog';
 import { FloatingAddButton, type FabAction } from '@/components/FloatingAddButton';
 import {
   Popover,
@@ -723,13 +723,45 @@ export const FlashcardsPage = () => {
         />
       )}
 
-      {/* Deck settings (TTS, etc.) */}
+      {/* Deck settings (TTS, daily limits, FSRS, easy days, custom study) */}
       <DeckSettingsDialog
         open={!!settingsDeck}
         onOpenChange={open => !open && setSettingsDeck(null)}
         deck={settingsDeck}
         onSave={updates => {
           if (settingsDeck) updateDeck(settingsDeck.id, updates);
+        }}
+        onLaunchCustomStudy={action => {
+          if (!settingsDeck) return;
+          const deckId = settingsDeck.id;
+          // "Today only" bumps are persisted on the deck so the regular due
+          // queue widens for the rest of the local day. Other actions launch
+          // a one-off scoped review session via navigation state.
+          if (action.type === 'extraNew' || action.type === 'extraReviews') {
+            const todayKey = (() => {
+              const d = new Date();
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              return `${y}-${m}-${day}`;
+            })();
+            const existing =
+              settingsDeck.todayBumps && settingsDeck.todayBumps.date === todayKey
+                ? settingsDeck.todayBumps
+                : { date: todayKey };
+            const merged = { ...existing };
+            if (action.type === 'extraNew') {
+              merged.extraNew = (existing.extraNew || 0) + action.count;
+            } else {
+              merged.extraReviews = (existing.extraReviews || 0) + action.count;
+            }
+            updateDeck(deckId, { todayBumps: merged });
+            navigate(`/flashcards/${deckId}/review`);
+            return;
+          }
+          navigate(`/flashcards/${deckId}/review`, {
+            state: { customStudy: action satisfies CustomStudyAction },
+          });
         }}
       />
 

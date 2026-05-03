@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, ReactNode } from 'react';
-import { AppData, Lesson, Settings, DEFAULT_SETTINGS, CategoryData, ActivityRecord, FSRSRating, Deck, Card } from '@/types/lesson';
+import { AppData, Lesson, Settings, DEFAULT_SETTINGS, CategoryData, ActivityRecord, FSRSRating, Deck, Card, EASY_DAY_SCALE } from '@/types/lesson';
 import { processCardReview, shouldAutoSuspendAsLeech } from '@/lib/cardFsrs';
 import { isNativePlatform } from '@/lib/platform';
 import { getData, saveData, getInitialDataSync } from '@/lib/storage';
@@ -1314,7 +1314,10 @@ const useLocalStorageInternal = () => {
     const card = (current.cards || []).find(c => c.id === cardId);
     if (!card) return { leechSuspended: false };
 
-    const retention = current.settings.desiredRetention ?? 0.9;
+    // Per-deck overrides take precedence over the global setting.
+    const deck = (current.decks || []).find(d => d.id === card.deckId);
+    const retention =
+      deck?.desiredRetentionOverride ?? current.settings.desiredRetention ?? 0.9;
     const { fsrsState, nextReviewDate } = processCardReview(card, rating, retention);
     const historyEntry = {
       date: new Date().toISOString(),
@@ -1322,7 +1325,8 @@ const useLocalStorageInternal = () => {
       stability: fsrsState.stability,
       difficulty: fsrsState.difficulty,
     };
-    const threshold = current.settings.leechThreshold ?? 0;
+    const threshold =
+      deck?.leechThresholdOverride ?? current.settings.leechThreshold ?? 0;
     const leechSuspended = shouldAutoSuspendAsLeech(fsrsState, card.suspended, threshold);
 
     setData(prev => {
@@ -1398,9 +1402,93 @@ const useLocalStorageInternal = () => {
       }
     }
     const deck = (data.decks || []).find(d => d.id === deckId);
-    const newLimit = deck?.newPerDay ?? 20;
-    return [...dueCards, ...newCards.slice(0, newLimit)];
+    let newLimit = deck?.newPerDay ?? 20;
+    let reviewLimit = deck?.reviewsPerDay ?? 200;
+
+    // Easy Days: scale today's allowance by the configured weekday level.
+    // weekdays array uses Mon..Sun ordering (index 0 = Monday).
+    if (deck?.easyDays && deck.easyDays.length === 7) {
+      const jsDow = now.getDay(); // 0=Sun..6=Sat
+      const idx = (jsDow + 6) % 7; // 0=Mon..6=Sun
+      const level = deck.easyDays[idx];
+      const scale = EASY_DAY_SCALE[level] ?? 1;
+      reviewLimit = Math.max(0, Math.floor(reviewLimit * scale));
+      newLimit = Math.max(0, Math.floor(newLimit * scale));
+    }
+
+    // Today-only bumps from Custom Study; cleared automatically once date rolls over.
+    const todayKey = toLocalDateStr(now);
+    const bumps =
+      deck?.todayBumps && deck.todayBumps.date === todayKey
+        ? deck.todayBumps
+        : null;
+    if (bumps?.extraNew) newLimit += bumps.extraNew;
+    if (bumps?.extraReviews) reviewLimit += bumps.extraReviews;
+
+    const cappedReviews = dueCards.slice(0, reviewLimit);
+    let cappedNew = newCards.slice(0, newLimit);
+
+    // When new cards count against the review cap, shrink new to fit the headroom.
+    if (!deck?.newCardsIgnoreReviewLimit) {
+      const headroom = Math.max(0, reviewLimit - cappedReviews.length);
+      cappedNew = cappedNew.slice(0, headroom);
+    }
+
+    return deck?.limitsStartFromTop
+      ? [...cappedNew, ...cappedReviews]
+      : [...cappedReviews, ...cappedNew];
   }, [data.cards, data.decks]);
+
+  /**
+   * Custom Study card selection. Bypasses normal daily-limit / due-date logic
+   * and returns up to `limit` cards matching the provided filter, scoped to a
+   * single deck. Used by the Custom Study buttons in Deck Settings.
+   */
+  const getCustomStudyCards = useCallback((
+    deckId: string,
+    filter:
+      | { type: 'forgotten'; limit: number }
+      | { type: 'ahead'; limit: number; days: number }
+      | { type: 'previewNew'; limit: number }
+      | { type: 'state'; state: 'new' | 'learning' | 'review' | 'relearning'; limit: number }
+      | { type: 'tag'; tag: string; limit: number },
+  ): Card[] => {
+    const all = (data.cards || []).filter(c => c.deckId === deckId && !c.suspended);
+    let pool: Card[] = [];
+    switch (filter.type) {
+      case 'forgotten':
+        pool = all.filter(c => (c.fsrs?.lapses ?? 0) > 0);
+        break;
+      case 'ahead': {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() + Math.max(1, filter.days));
+        pool = all.filter(
+          c => c.fsrs && c.fsrs.state !== 'new' && new Date(c.nextReviewDate) <= cutoff,
+        );
+        // Soonest-due first to mirror normal review order.
+        pool.sort(
+          (a, b) =>
+            new Date(a.nextReviewDate).getTime() -
+            new Date(b.nextReviewDate).getTime(),
+        );
+        break;
+      }
+      case 'previewNew':
+        pool = all.filter(c => !c.fsrs || c.fsrs.state === 'new');
+        break;
+      case 'state':
+        pool = all.filter(c => (c.fsrs?.state ?? 'new') === filter.state);
+        break;
+      case 'tag': {
+        const needle = filter.tag.trim().toLowerCase();
+        pool = needle
+          ? all.filter(c => (c.tags || []).some(t => t.toLowerCase() === needle))
+          : [];
+        break;
+      }
+    }
+    return pool.slice(0, Math.max(0, filter.limit));
+  }, [data.cards]);
 
   return {
     data,
@@ -1460,6 +1548,7 @@ const useLocalStorageInternal = () => {
     reviewCard,
     getDeckCards,
     getDueCards,
+    getCustomStudyCards,
     getTodayDueCount,
     getLessonsForDeck,
   };

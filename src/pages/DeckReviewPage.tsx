@@ -53,7 +53,8 @@ export const DeckReviewPage = () => {
   const location = useLocation();
   const jumpToCardId = (location.state as { jumpToCardId?: string } | null)?.jumpToCardId;
   const jumpedRef = useRef(false);
-  const { data, getDueCards, reviewCard, addCards, updateCard, deleteCard, updateSettings } = useLocalStorage();
+  const { data, getDueCards, getCustomStudyCards, reviewCard, addCards, updateCard, deleteCard, updateSettings } = useLocalStorage();
+  const customStudy = (location.state as { customStudy?: import('@/components/DeckSettingsDialog').CustomStudyAction } | null)?.customStudy;
   const { containerClass } = useDisplayMode(data.settings.displayMode);
   const { t, isRTL } = useTranslation();
   const { toast } = useToast();
@@ -88,10 +89,16 @@ export const DeckReviewPage = () => {
   const ttsRate = deck?.ttsRate ?? 1.0;
   const ttsAutoPlay = deck?.ttsAutoPlay ?? false;
 
-  // Snapshot due-card IDs once per session so the queue doesn't shrink mid-session
-  const [queue, setQueue] = useState<string[]>(() =>
-    deckId ? getDueCards(deckId).map(c => c.id) : [],
-  );
+  // Snapshot due-card IDs once per session so the queue doesn't shrink mid-session.
+  // When invoked with a Custom Study filter, build the queue from that scope
+  // instead of the regular due-card list.
+  const [queue, setQueue] = useState<string[]>(() => {
+    if (!deckId) return [];
+    if (customStudy && customStudy.type !== 'extraNew' && customStudy.type !== 'extraReviews') {
+      return getCustomStudyCards(deckId, customStudy).map(c => c.id);
+    }
+    return getDueCards(deckId).map(c => c.id);
+  });
   const [position, setPosition] = useState(0);
   const initialTotal = useRef(queue.length);
 
@@ -113,11 +120,14 @@ export const DeckReviewPage = () => {
     return id ? allCards.find(c => c.id === id) : undefined;
   }, [queue, position, allCards]);
 
-  // Compute review-time interval previews from the live card state
+  // Compute review-time interval previews from the live card state.
+  // Per-deck retention overrides take precedence over the global setting.
+  const effectiveRetention =
+    deck?.desiredRetentionOverride ?? data.settings.desiredRetention ?? 0.9;
   const reviewOptions = useMemo(() => {
     if (!currentCard) return null;
-    return getCardReviewOptions(currentCard, data.settings.desiredRetention ?? 0.9);
-  }, [currentCard, data.settings.desiredRetention]);
+    return getCardReviewOptions(currentCard, effectiveRetention);
+  }, [currentCard, effectiveRetention]);
 
   // Resolve media (replace <img src="file"> + extract [sound:])
   useEffect(() => {
