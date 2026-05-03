@@ -1,0 +1,52 @@
+Objective
+Four categories of improvements to Spaced Study Pro:
+
+Small screen UX: Remove "Due in X days" label from lesson cards and hide the calendar strip (days of week) on phone-sized screens only
+Unlimited storage: Switch web storage from localStorage (~5MB limit) to IndexedDB (effectively unlimited)
+Bug fix: Fix bulk-delete toast storm in Library page
+UX improvements: Various polish items found in audit
+Tasks
+T001: Hide "Due in" label on small screens (LessonCard)
+Blocked By: []
+Details:
+In src/components/LessonCard.tsx line ~252, the dueLabel span (shows "Due in 3d" / "Due on Apr 5") renders at all screen sizes
+Add hidden sm:inline to that span so it is invisible on phones but visible on tablets/desktop
+Files: src/components/LessonCard.tsx
+Acceptance: "Due in" / "Due on" badge not shown on screens smaller than sm (640px); shows normally on larger screens
+T002: Hide CalendarStrip on small screens (Home/Tasks page)
+Blocked By: []
+Details:
+In src/pages/HomePage.tsx line ~276-283, the <div className="mb-6"> wrapping <CalendarStrip /> takes up significant vertical space on small phones
+Wrap that div with hidden sm:block so the calendar strip only renders on tablets and up
+Files: src/pages/HomePage.tsx
+Acceptance: CalendarStrip not visible on phones; visible on sm: (640px+)
+T003: Switch web storage from localStorage to IndexedDB (unlimited storage)
+Blocked By: []
+Details:
+localStorage is capped at ~5MB by browsers. IndexedDB can hold gigabytes.
+Step 1: Create src/lib/indexedDB.ts with a minimal async wrapper: openDB(), idbGet(key), idbSet(key, value), idbGetBytes() (estimates stored size)
+Step 2: Update src/lib/storage.ts:
+getData() web path: try IndexedDB first; if empty, check localStorage for existing data and auto-migrate it (copy to IndexedDB, then clear localStorage key so stale data doesn't re-appear on next load)
+saveData() web path: write to IndexedDB instead of localStorage
+getInitialDataSync(): keep as-is (reads localStorage for first-paint on very first load only; cleared after migration so won't show stale data on future loads)
+Step 3: Update src/hooks/useLocalStorage.tsx:
+Remove the early-return for non-native platforms (lines 113-117) so web ALSO performs the async load from IndexedDB on mount
+This ensures IndexedDB data is picked up after migration and on every subsequent load
+Step 4: Update src/pages/SettingsPage.tsx:
+Make the storage indicator async: use useEffect + idbGetBytes() to compute actual used space
+Show "X KB used (no limit)" instead of "X / 5 MB (Y%)" — remove the progress bar since there's no meaningful cap
+Files: src/lib/indexedDB.ts (new), src/lib/storage.ts, src/hooks/useLocalStorage.tsx, src/pages/SettingsPage.tsx
+Acceptance: Data saves to IndexedDB on web; existing localStorage data migrates automatically on first open; SettingsPage no longer shows "/ 5 MB" cap; app works identically
+T004: Fix bulk-delete "toast storm" in Library
+Blocked By: []
+Details:
+In src/pages/LibraryPage.tsx line ~146, bulk deleting selected lessons calls deleteLessonWithUndo(id) in a forEach loop. Each call triggers its own undo toast, flooding the screen.
+Add a batchDeleteLessons(ids: string[]) function in src/hooks/useUndoableActions.tsx that deletes all lessons silently (no individual toasts) then fires ONE summary toast: "X lessons deleted — Undo" that restores all of them at once
+Wire it up in LibraryPage's bulk delete handler
+Files: src/hooks/useUndoableActions.tsx, src/pages/LibraryPage.tsx
+Acceptance: Bulk deleting 5 lessons shows 1 undo toast (not 5)
+T007: UX polish — several small improvements from audit
+Blocked By: []
+Details: a. "Mastered" stat for Medical Board users: The top "Mastered" card shows 0 for users in Medical Board mode (lessons never reach completed: true). Add a check in StatsPage: for lessons in Medical Board categories, count those with fsrs.stability >= 21 as "mature" and add them to the mastered count, or show "N/A (Endless mode)" so it's not confusingly zero. b. LessonCard RTL badge positioning: On line ~240, the flex row uses ml-auto sm:ml-0 which pushes status badges to the right on mobile. On RTL (Arabic), this is inverted. Change to use rtl:mr-auto rtl:ml-0 sm:rtl:mr-0 alongside existing classes for correct RTL alignment. c. Category filter clear button on Home page: When a user arrives from the Categories page with a category pre-filter active, there's no obvious way to dismiss it. Add a small "×" button next to the active category chip label so users can clear the filter without having to tap the chip a second time.
+Files: src/pages/StatsPage.tsx, src/components/LessonCard.tsx, src/pages/HomePage.tsx
+Acceptance: Medical Board users see meaningful mastered/mature stat; RTL badges align correctly; active category filter has a clear button

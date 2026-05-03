@@ -1,0 +1,452 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Cairo:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 30% 98%;
+    --foreground: 200 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 200 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 25% 15%;
+
+    --primary: 175 45% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 30% 94%;
+    --secondary-foreground: 200 25% 25%;
+
+    --muted: 40 20% 92%;
+    --muted-foreground: 200 15% 45%;
+
+    --accent: 35 85% 55%;
+    --accent-foreground: 35 90% 15%;
+
+    --success: 155 60% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 35 85% 55%;
+    --warning-foreground: 35 90% 15%;
+
+    --danger: 0 70% 55%;
+    --danger-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 88%;
+    --input: 200 20% 88%;
+    --ring: 175 45% 35%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  /* Zinc Theme */
+  [data-theme="zinc"] {
+    --primary: 240 5% 34%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 240 5% 34%;
+    --accent: 240 5% 65%;
+    --accent-foreground: 240 5% 10%;
+  }
+
+  /* Medical Theme (Default) */
+  [data-theme="medical"] {
+    --primary: 188 78% 41%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 188 78% 41%;
+    --accent: 175 60% 45%;
+    --accent-foreground: 175 60% 10%;
+  }
+
+  /* Rose Theme */
+  [data-theme="rose"] {
+    --primary: 346 77% 50%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 346 77% 50%;
+    --accent: 346 77% 70%;
+    --accent-foreground: 346 77% 10%;
+  }
+
+  /* Green Theme */
+  [data-theme="green"] {
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 142 71% 45%;
+    --accent: 142 50% 60%;
+    --accent-foreground: 142 50% 10%;
+  }
+
+  /* Glacier Theme */
+  [data-theme="glacier"] {
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 199 89% 48%;
+    --accent: 199 80% 60%;
+    --accent-foreground: 199 80% 10%;
+  }
+
+  /* Harvest Theme */
+  [data-theme="harvest"] {
+    --primary: 38 92% 50%;
+    --primary-foreground: 38 90% 10%;
+    --ring: 38 92% 50%;
+    --accent: 45 90% 55%;
+    --accent-foreground: 45 90% 10%;
+  }
+
+  /* Lavender Theme */
+  [data-theme="lavender"] {
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 258 90% 66%;
+    --accent: 270 80% 70%;
+    --accent-foreground: 270 80% 10%;
+  }
+
+  /* Brutalist Theme */
+  [data-theme="brutalist"] {
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 0 0% 0%;
+    --accent: 0 0% 25%;
+    --accent-foreground: 0 0% 100%;
+  }
+
+  /* Obsidian Theme */
+  [data-theme="obsidian"] {
+    --primary: 271 81% 56%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 271 81% 56%;
+    --accent: 280 70% 50%;
+    --accent-foreground: 0 0% 100%;
+  }
+
+  /* Orchid Theme */
+  [data-theme="orchid"] {
+    --primary: 330 81% 60%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 330 81% 60%;
+    --accent: 340 75% 65%;
+    --accent-foreground: 340 75% 10%;
+  }
+
+  /* Solar Theme */
+  [data-theme="solar"] {
+    --primary: 48 96% 53%;
+    --primary-foreground: 48 90% 10%;
+    --ring: 48 96% 53%;
+    --accent: 45 95% 60%;
+    --accent-foreground: 45 90% 10%;
+  }
+
+  /* Tide Theme */
+  [data-theme="tide"] {
+    --primary: 188 78% 41%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 188 78% 41%;
+    --accent: 175 60% 45%;
+    --accent-foreground: 175 60% 10%;
+  }
+
+  /* Verdant Theme */
+  [data-theme="verdant"] {
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 160 84% 39%;
+    --accent: 152 70% 45%;
+    --accent-foreground: 152 70% 10%;
+  }
+
+  .dark {
+    --background: 210 25% 8%;
+    --foreground: 40 20% 95%;
+
+    --card: 210 25% 12%;
+    --card-foreground: 40 20% 95%;
+
+    --popover: 210 25% 12%;
+    --popover-foreground: 40 20% 95%;
+
+    --primary: 175 50% 45%;
+    --primary-foreground: 210 25% 8%;
+
+    --secondary: 210 20% 18%;
+    --secondary-foreground: 40 20% 90%;
+
+    --muted: 210 20% 15%;
+    --muted-foreground: 200 15% 55%;
+
+    --accent: 35 85% 55%;
+    --accent-foreground: 35 90% 10%;
+
+    --success: 155 55% 45%;
+    --success-foreground: 155 60% 10%;
+
+    --warning: 35 85% 55%;
+    --warning-foreground: 35 90% 10%;
+
+    --danger: 0 65% 55%;
+    --danger-foreground: 0 0% 100%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 20%;
+    --input: 210 20% 20%;
+    --ring: 175 50% 45%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Dark mode color themes */
+  .dark[data-theme="zinc"] {
+    --primary: 240 5% 65%;
+    --primary-foreground: 240 5% 10%;
+    --ring: 240 5% 65%;
+  }
+
+  .dark[data-theme="medical"] {
+    --primary: 188 70% 50%;
+    --primary-foreground: 188 70% 10%;
+    --ring: 188 70% 50%;
+  }
+
+  .dark[data-theme="rose"] {
+    --primary: 346 77% 60%;
+    --primary-foreground: 346 77% 10%;
+    --ring: 346 77% 60%;
+  }
+
+  .dark[data-theme="green"] {
+    --primary: 142 60% 50%;
+    --primary-foreground: 142 60% 10%;
+    --ring: 142 60% 50%;
+  }
+
+  .dark[data-theme="glacier"] {
+    --primary: 199 85% 55%;
+    --primary-foreground: 199 85% 10%;
+    --ring: 199 85% 55%;
+  }
+
+  .dark[data-theme="harvest"] {
+    --primary: 38 90% 55%;
+    --primary-foreground: 38 90% 10%;
+    --ring: 38 90% 55%;
+  }
+
+  .dark[data-theme="lavender"] {
+    --primary: 258 85% 70%;
+    --primary-foreground: 258 85% 10%;
+    --ring: 258 85% 70%;
+  }
+
+  .dark[data-theme="brutalist"] {
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --ring: 0 0% 100%;
+  }
+
+  .dark[data-theme="obsidian"] {
+    --primary: 271 75% 65%;
+    --primary-foreground: 271 75% 10%;
+    --ring: 271 75% 65%;
+  }
+
+  .dark[data-theme="orchid"] {
+    --primary: 330 75% 65%;
+    --primary-foreground: 330 75% 10%;
+    --ring: 330 75% 65%;
+  }
+
+  .dark[data-theme="solar"] {
+    --primary: 48 90% 58%;
+    --primary-foreground: 48 90% 10%;
+    --ring: 48 90% 58%;
+  }
+
+  .dark[data-theme="tide"] {
+    --primary: 188 70% 50%;
+    --primary-foreground: 188 70% 10%;
+    --ring: 188 70% 50%;
+  }
+
+  .dark[data-theme="verdant"] {
+    --primary: 160 75% 50%;
+    --primary-foreground: 160 75% 10%;
+    --ring: 160 75% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(25 80% 50%) 100%);
+  }
+
+  /* Safe area insets for mobile devices with notches/home indicators */
+  .pb-safe {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pt-safe {
+    padding-top: max(2rem, env(safe-area-inset-top, 0px) + 2rem);
+  }
+
+  /* Fluid Typography - scales smoothly between mobile and desktop */
+  .text-fluid-xs { font-size: clamp(0.625rem, 0.5rem + 0.5vw, 0.75rem); }
+  .text-fluid-sm { font-size: clamp(0.75rem, 0.625rem + 0.5vw, 0.875rem); }
+  .text-fluid-base { font-size: clamp(0.875rem, 0.75rem + 0.5vw, 1rem); }
+  .text-fluid-lg { font-size: clamp(1rem, 0.875rem + 0.5vw, 1.125rem); }
+  .text-fluid-xl { font-size: clamp(1.125rem, 1rem + 0.5vw, 1.25rem); }
+
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from { 
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to { 
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+/* RTL Support for Arabic */
+[dir="rtl"] {
+  font-family: 'Cairo', 'Inter', sans-serif;
+}
+
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6,
+[dir="rtl"] .font-heading {
+  font-family: 'Cairo', 'Space Grotesk', sans-serif;
+}
+
+/* RTL-aware flex utilities */
+[dir="rtl"] .rtl\:flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+/* RTL-aware spacing - swap margins/paddings */
+[dir="rtl"] .rtl\:mr-2 {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+[dir="rtl"] .rtl\:ml-2 {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+[dir="rtl"] .rtl\:pr-2 {
+  padding-right: 0.5rem;
+  padding-left: 0;
+}
+
+[dir="rtl"] .rtl\:pl-2 {
+  padding-left: 0.5rem;
+  padding-right: 0;
+}
+
+/* RTL-aware text alignment */
+[dir="rtl"] .rtl\:text-right {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl\:text-left {
+  text-align: left;
+}
+
+/* Icon flip for RTL (arrows, chevrons) */
+[dir="rtl"] .rtl\:rotate-180 {
+  transform: rotate(180deg);
+}

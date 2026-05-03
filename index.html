@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Spaced Study Pro</title>
+    <meta name="description" content="Spaced repetition study app for medical students">
+    <meta name="author" content="Mo Saeed" />
+    
+    <!-- Blocking script to apply theme BEFORE React loads (prevents flash) -->
+    <script>
+      (function() {
+        try {
+          // Read theme mode from dedicated key first, then fallback to main data
+          var themeMode = localStorage.getItem('theme-mode');
+          if (!themeMode) {
+            var data = localStorage.getItem('spaced-repetition-data');
+            if (data) {
+              var parsed = JSON.parse(data);
+              themeMode = parsed.settings?.theme;
+            }
+          }
+          
+          // Read color theme from dedicated key first, then fallback to main data
+          var colorTheme = localStorage.getItem('color-theme');
+          if (!colorTheme) {
+            var data = localStorage.getItem('spaced-repetition-data');
+            if (data) {
+              var parsed = JSON.parse(data);
+              colorTheme = parsed.settings?.colorTheme;
+            }
+          }
+          
+          // Apply dark mode immediately
+          if (themeMode === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (themeMode === 'system') {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+          
+          // Apply color theme immediately
+          if (colorTheme) {
+            document.documentElement.setAttribute('data-theme', colorTheme);
+          }
+        } catch(e) {
+          // Silently fail if localStorage is not available
+        }
+      })();
+    </script>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0ea5e9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="StudyPro" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Spaced Study Pro" />
+    <meta property="og:description" content="Spaced repetition study app for medical students" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Spaced Study Pro" />
+    <meta name="twitter:description" content="Spaced repetition study app for medical students" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

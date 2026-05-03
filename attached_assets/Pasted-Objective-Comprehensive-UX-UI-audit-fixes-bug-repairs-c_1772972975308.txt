@@ -1,0 +1,114 @@
+Objective
+Comprehensive UX/UI audit fixes, bug repairs, cross-page connectivity improvements, and automation enhancements across all pages of Spaced Study Pro.
+
+BUGS FOUND
+T001: Fix RTL (Arabic) Layout Bugs in ReviewActionSheet
+Blocked By: []
+Details:
+File: src/components/ReviewActionSheet.tsx
+Line 225: DrawerHeader className="text-left pb-2" → change to className={cn("pb-2", isRTL ? "text-right" : "text-left")} — the current code forces left-aligned text even in Arabic
+Line 417: <ChevronRight /> used as a directional arrow in the "Up Next" preview — in RTL this should be <ChevronLeft />. Use isRTL ? ChevronLeft : ChevronRight logic.
+Import useTranslation and destructure isRTL if not already present.
+Acceptance: In Arabic mode, the drawer header text is right-aligned and the navigation chevron points left
+T002: Fix Mobile Library Sort — Sort Hidden on Phones
+Blocked By: []
+Details:
+File: src/pages/LibraryPage.tsx line ~314
+Bug: onSortChange={isTabletMode ? handleSortChange : undefined} — mobile users can't sort
+Fix: Change to onSortChange={handleSortChange} so sort is always enabled
+Also verify SearchFilters.tsx renders the sort UI regardless of isTabletMode
+Acceptance: Sort dropdown works on mobile phones
+T003: Fix Hacky String Splitting in Home Celebration State
+Blocked By: []
+Details:
+File: src/pages/HomePage.tsx line ~282
+Current: t('home.reviewedToday', { count: reviewedToday }).split(' ').slice(1).join(' ') || 'reviewed'
+This splits the translated string to extract "reviewed" which breaks in Arabic (word order differs)
+Fix: Add a dedicated home.reviewedLabel translation key: EN → 'reviewed', AR → 'تمت مراجعتها'
+Then replace the split with t('home.reviewedLabel')
+Files: src/pages/HomePage.tsx, src/lib/translations/en.ts, src/lib/translations/ar.ts
+Acceptance: The reviewed count label renders correctly in both EN and AR
+T004: Add Missing Translation Keys Used with Hardcoded Fallbacks
+Blocked By: []
+Details:
+File: src/pages/HomePage.tsx has two || 'fallback' strings needing proper keys:
+Line ~483: t('home.allMasteredInCategory') || 'All lessons mastered!' → add key to both translation files
+Line ~498: t('home.showAllCategories') || 'Show all categories' → add key to both translation files
+EN translations: allMasteredInCategory: 'All lessons mastered!', showAllCategories: 'Show all categories'
+AR translations: allMasteredInCategory: 'جميع الدروس متقنة!', showAllCategories: 'عرض جميع التصنيفات'
+Files: src/lib/translations/en.ts, src/lib/translations/ar.ts
+Acceptance: No || 'fallback' strings remain for these keys; AR renders in Arabic
+UX / UI IMPROVEMENTS
+T005: Add Visual Affordance to Clickable Stats Cards
+Blocked By: []
+Details:
+File: src/pages/StatsPage.tsx
+The Mastered, Missed, Due Today, and Streak quick-stat cards are clickable and navigate to other pages, but have no visual cue (no arrow, no hover state beyond cursor change)
+Fix: Add a small ChevronRight (RTL-aware) icon to the bottom-right of each card that navigates somewhere, and add a hover:shadow-md / active:scale-95 transition to make them feel tappable
+Acceptance: Stats cards visually indicate they are tappable/interactive
+T006: Add "Review Now" Shortcut from Library Due Lessons
+Blocked By: []
+Details:
+File: src/pages/LibraryPage.tsx
+When filtered to "Due Today" or "Missed", users can see their lessons but have no way to start reviewing from Library — they must navigate back to Home
+Fix: When the status filter is due-today or missed, show a sticky banner at the top of the results: "X lessons due — [Review Now →]" that navigates to '/'
+Acceptance: A "Review Now" CTA appears when due/missed lessons are shown in Library
+T007: Add CTAs to Home Celebration State (All Done)
+Blocked By: []
+Details:
+File: src/pages/HomePage.tsx (the celebration card, lines ~268–347)
+When all reviews are done, the card shows stats and next review date but no actionable links
+Fix: Add two action buttons below the stats:
+"View Library" → navigates to /library
+"Add Lesson" → opens the FloatingAddButton's add dialog (or navigate to /library with addOpen state)
+Acceptance: Two action buttons appear in the celebration card, both functional
+T008: Persist Category Expansion State Across Page Refreshes
+Blocked By: []
+Details:
+File: src/pages/CategoriesPage.tsx
+Expanded categories collapse on every page refresh; when navigating away and back, all categories are collapsed
+Fix: Persist the expandedCategories Set in sessionStorage (key: categories-expanded-state) — save on change, restore on mount
+Acceptance: Categories stay expanded after navigating away and back within the session
+T009: Add Home → Categories Link from Mastered Categories Section
+Blocked By: []
+Details:
+File: src/pages/HomePage.tsx (the mastered categories trophy section, lines ~327–346)
+Currently shows mastered category badges but they are not tappable
+Fix: Make each mastered category badge a button that navigates to /categories with { state: { scrollToCategory: category } }
+Acceptance: Tapping a mastered category badge navigates to and scrolls to that category on the Categories page
+T010: Fix ReviewActionSheet Rated Label Word Order for Arabic
+Blocked By: []
+Details:
+File: src/components/ReviewActionSheet.tsx
+Line ~396: <>{t('ratings.rated')} {config.label}</> — concatenation breaks Arabic word order
+Fix: Add a new translation key ratings.ratedAs with a variable: EN → 'Rated: {label}', AR → 'تقييم: {label}'
+Then replace with t('ratings.ratedAs', { label: config.label })
+Files: src/components/ReviewActionSheet.tsx, src/lib/translations/en.ts, src/lib/translations/ar.ts
+Acceptance: Rated label renders naturally in Arabic
+CROSS-PAGE CONNECTIVITY
+T011: Make Library Sort Available on Mobile
+Already covered in T002
+T012: Connect Home Category Empty State to Calendar Navigation
+Blocked By: []
+Details:
+File: src/pages/HomePage.tsx (category filter empty state, lines ~471–501)
+When a category has no due lessons, shows next review date — but the date is just text with no interaction
+Fix: Make the date text a tappable button that sets selectedDate to the next review date (jumps the CalendarStrip to that day), only works on ≥390px screens where the CalendarStrip is visible
+Acceptance: Tapping the "next review" date in the empty state selects that date on the CalendarStrip
+AUTOMATION
+T013: Auto-Show Catch-Up Motivation on Home When Overdue
+Blocked By: []
+Details:
+File: src/pages/HomePage.tsx
+If missedLessons.length > 0, the missed section already shows — but there's no motivational context banner telling users HOW many days they've missed
+Fix: If missed lessons span more than 1 day (detect by checking the oldest nextReviewDate in missedLessons vs today), show a subtle info pill above the missed section: e.g., "You have lessons from {N} days ago"
+This is non-intrusive and purely informational
+Files: src/pages/HomePage.tsx
+Acceptance: When missed lessons exist from 2+ days ago, a gentle info note appears
+T014: Remove Unnecessary || 'fallback' from sessionHistory Strings in SettingsPage
+Blocked By: []
+Details:
+File: src/pages/SettingsPage.tsx lines ~568–571
+{t('sessionHistory.title') || 'Session History'} and {t('sessionHistory.description') || '...'} — these keys already exist in both translation files
+Fix: Remove the || fallbacks — they are dead code that adds noise
+Acceptance: Clean code with no unnecessary fallbacks

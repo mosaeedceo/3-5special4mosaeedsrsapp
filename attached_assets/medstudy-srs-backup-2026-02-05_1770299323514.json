@@ -1,0 +1,246 @@
+{
+  "version": 2,
+  "exportedAt": "2026-02-05T13:48:26.097Z",
+  "includesAttachments": false,
+  "data": {
+    "lessons": [
+      {
+        "title": "Fibroid",
+        "category": "Gynecology",
+        "subject": "General",
+        "difficulty": "Medium",
+        "customIntervals": [
+          1,
+          1,
+          4,
+          7,
+          14,
+          30
+        ],
+        "id": "6f4f6c83-a3b9-42b4-84aa-12fd8fa6fb36",
+        "dateAdded": "2026-01-22T15:00:49.595Z",
+        "nextReviewDate": "2026-02-03T00:35:53.429Z",
+        "currentStage": 2,
+        "completed": false,
+        "reviewHistory": [
+          "2026-01-24T21:14:59.978Z",
+          "2026-01-27T00:35:53.429Z"
+        ],
+        "attachments": [],
+        "fsrs": {
+          "stability": 7.1416334690592835,
+          "difficulty": 4.93,
+          "elapsedDays": 2,
+          "scheduledDays": 7,
+          "reps": 2,
+          "lapses": 0,
+          "state": "review",
+          "lastReview": "2026-01-27T00:35:53.429Z"
+        }
+      },
+      {
+        "title": "Endometriosis",
+        "category": "Gynecology",
+        "subject": "General",
+        "difficulty": "Easy",
+        "customIntervals": [
+          1,
+          1,
+          4,
+          7,
+          14,
+          30
+        ],
+        "id": "eebbe936-389d-460f-8ff2-3850dccf4632",
+        "dateAdded": "2026-01-22T16:32:21.270Z",
+        "nextReviewDate": "2026-03-25T17:38:33.482Z",
+        "currentStage": 4,
+        "completed": true,
+        "reviewHistory": [
+          "2026-01-24T21:15:02.663Z",
+          "2026-01-27T00:35:59.526Z",
+          "2026-02-04T17:38:33.482Z"
+        ],
+        "fsrs": {
+          "stability": 48.945352088320774,
+          "difficulty": 4.078599999999999,
+          "elapsedDays": 8,
+          "scheduledDays": 49,
+          "reps": 3,
+          "lapses": 0,
+          "state": "review",
+          "lastReview": "2026-02-04T17:38:33.482Z"
+        }
+      },
+      {
+        "title": "prolapse",
+        "category": "Gynecology",
+        "subject": "General",
+        "difficulty": "Medium",
+        "id": "b80f87d2-f111-44f8-a60c-52fd7bbaae3b",
+        "dateAdded": "2026-01-28T13:45:10.487Z",
+        "nextReviewDate": "2026-01-29T13:44:48.507Z",
+        "currentStage": 0,
+        "completed": false,
+        "reviewHistory": [],
+        "fsrs": {
+          "stability": 1,
+          "difficulty": 5,
+          "elapsedDays": 0,
+          "scheduledDays": 1,
+          "reps": 0,
+          "lapses": 0,
+          "state": "new"
+        }
+      },
+      {
+        "title": "Fistula",
+        "category": "Gynecology",
+        "subject": "General",
+        "difficulty": "Medium",
+        "id": "8b7a07b0-07ec-45ad-a6ff-dbda0689cb41",
+        "dateAdded": "2026-02-01T16:39:39.123Z",
+        "nextReviewDate": "2026-02-02T16:39:34.369Z",
+        "currentStage": 0,
+        "completed": false,
+        "reviewHistory": [],
+        "fsrs": {
+          "stability": 1,
+          "difficulty": 5,
+          "elapsedDays": 0,
+          "scheduledDays": 0,
+          "reps": 0,
+          "lapses": 0,
+          "state": "new"
+        }
+      },
+      {
+        "title": "oncology scheme",
+        "category": "Gynecology",
+        "subject": "Oncology",
+        "difficulty": "Medium",
+        "id": "ebf95e3a-e1ca-492e-a2ed-e6482abb6bac",
+        "dateAdded": "2026-02-03T10:12:24.629Z",
+        "nextReviewDate": "2026-02-05T11:33:49.912Z",
+        "currentStage": 1,
+        "completed": false,
+        "reviewHistory": [
+          "2026-02-03T11:33:49.912Z"
+        ],
+        "fsrs": {
+          "stability": 2.4,
+          "difficulty": 4.93,
+          "elapsedDays": 0,
+          "scheduledDays": 2,
+          "reps": 1,
+          "lapses": 0,
+          "state": "review",
+          "lastReview": "2026-02-03T11:33:49.912Z"
+        }
+      },
+      {
+        "title": "Cancer Cervix",
+        "category": "Gynecology",
+        "subject": "Oncology",
+        "difficulty": "Medium",
+        "id": "d7176c0c-832a-4e8b-be99-f0599386a918",
+        "dateAdded": "2026-02-03T14:16:45.127Z",
+        "nextReviewDate": "2026-02-04T14:16:38.617Z",
+        "currentStage": 0,
+        "completed": false,
+        "reviewHistory": [],
+        "fsrs": {
+          "stability": 1,
+          "difficulty": 5,
+          "elapsedDays": 0,
+          "scheduledDays": 0,
+          "reps": 0,
+          "lapses": 0,
+          "state": "new"
+        }
+      },
+      {
+        "title": "3132",
+        "category": "Gynecology",
+        "subject": "fghfgh",
+        "difficulty": "Medium",
+        "customIntervals": [
+          1,
+          2,
+          4,
+          7,
+          14,
+          55,
+          88,
+          112
+        ],
+        "id": "379e4d6b-88cd-4571-8dd6-e2af247bcacd",
+        "dateAdded": "2026-02-05T13:47:57.938Z",
+        "nextReviewDate": "2026-02-05T13:47:32.653Z",
+        "currentStage": 0,
+        "completed": false,
+        "reviewHistory": []
+      }
+    ],
+    "categories": [
+      "Gynecology"
+    ],
+    "categoryData": [
+      {
+        "name": "Gynecology",
+        "isMedicalBoardMode": false,
+        "examDate": "2026-02-21",
+        "isLegacyMode": true,
+        "legacyIntervals": [
+          1,
+          2,
+          4,
+          7,
+          14,
+          55,
+          88,
+          112
+        ]
+      }
+    ],
+    "activityHistory": [
+      {
+        "date": "2026-01-22",
+        "count": 1
+      },
+      {
+        "date": "2026-01-24",
+        "count": 2
+      },
+      {
+        "date": "2026-01-27",
+        "count": 2
+      },
+      {
+        "date": "2026-02-03",
+        "count": 1
+      },
+      {
+        "date": "2026-02-04",
+        "count": 1
+      }
+    ],
+    "settings": {
+      "intervals": [
+        1,
+        1,
+        4,
+        7,
+        14,
+        30
+      ],
+      "useFSRS": true,
+      "desiredRetention": 0.9,
+      "medicalBoardMode": false,
+      "masteryStabilityDays": 21,
+      "language": "en",
+      "fabPosition": "right",
+      "cramMode": false
+    }
+  }
+}
