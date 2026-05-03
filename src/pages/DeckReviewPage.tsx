@@ -64,6 +64,14 @@ export const DeckReviewPage = () => {
   const [installVoicesOpen, setInstallVoicesOpen] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  // IDs auto-suspended as leeches during this review session. When the
+  // "Quiet leech notifications" setting is on, we skip the per-card toast
+  // and instead surface them in the session-done summary.
+  const [sessionLeeches, setSessionLeeches] = useState<string[]>([]);
+  // Briefly-shown inline cue above the rating buttons when a leech is
+  // suspended in quiet mode — non-interruptive replacement for the toast.
+  const [leechHint, setLeechHint] = useState(false);
+  const leechHintTimerRef = useRef<number | null>(null);
 
   const deck = (data.decks || []).find(d => d.id === deckId);
 
@@ -133,6 +141,17 @@ export const DeckReviewPage = () => {
   // Cancel TTS on unmount / route change
   useEffect(() => {
     return () => { ttsCancel(); };
+  }, []);
+
+  // Clear any pending leech-hint timer on unmount to avoid setState on
+  // unmounted component warnings if the user leaves mid-fade.
+  useEffect(() => {
+    return () => {
+      if (leechHintTimerRef.current !== null) {
+        window.clearTimeout(leechHintTimerRef.current);
+        leechHintTimerRef.current = null;
+      }
+    };
   }, []);
 
   // Mirror the global TTS speaking-state into local state so Stop/Replay UI
@@ -249,22 +268,39 @@ export const DeckReviewPage = () => {
     const result = reviewCard(currentCard.id, rating);
     if (result?.leechSuspended && deckId) {
       const suspendedId = currentCard.id;
-      toast({
-        title: t('flashcards.leechToast'),
-        description: t('flashcards.leechToastDesc'),
-        action: (
-          <ToastAction
-            altText={t('flashcards.leechToastAction')}
-            onClick={() =>
-              navigate(`/flashcards`, {
-                state: { openManagerDeckId: deckId, focusCardId: suspendedId },
-              })
-            }
-          >
-            {t('flashcards.leechToastAction')}
-          </ToastAction>
-        ),
-      });
+      setSessionLeeches(prev =>
+        prev.includes(suspendedId) ? prev : [...prev, suspendedId],
+      );
+      if (data.settings.quietLeechNotifications) {
+        // Quiet mode: show a brief, non-interruptive inline hint above the
+        // rating buttons that fades after a few seconds. The full list is
+        // surfaced on the session-done card.
+        setLeechHint(true);
+        if (leechHintTimerRef.current !== null) {
+          window.clearTimeout(leechHintTimerRef.current);
+        }
+        leechHintTimerRef.current = window.setTimeout(() => {
+          setLeechHint(false);
+          leechHintTimerRef.current = null;
+        }, 2500);
+      } else {
+        toast({
+          title: t('flashcards.leechToast'),
+          description: t('flashcards.leechToastDesc'),
+          action: (
+            <ToastAction
+              altText={t('flashcards.leechToastAction')}
+              onClick={() =>
+                navigate(`/flashcards`, {
+                  state: { openManagerDeckId: deckId, focusCardId: suspendedId },
+                })
+              }
+            >
+              {t('flashcards.leechToastAction')}
+            </ToastAction>
+          ),
+        });
+      }
     }
     setPosition(p => p + 1);
   };
@@ -498,6 +534,29 @@ export const DeckReviewPage = () => {
                 {t('flashcards.sessionDoneDesc')}
               </p>
             </div>
+            {sessionLeeches.length > 0 && data.settings.quietLeechNotifications && (
+              <div className="w-full max-w-sm rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
+                <p>
+                  {t('flashcards.leechSessionSummary', {
+                    count: sessionLeeches.length,
+                  })}
+                </p>
+                <Button
+                  variant="link"
+                  className="h-auto p-0 mt-1 text-warning underline"
+                  onClick={() =>
+                    navigate('/flashcards', {
+                      state: {
+                        openManagerDeckId: deckId,
+                        focusCardId: sessionLeeches[0],
+                      },
+                    })
+                  }
+                >
+                  {t('flashcards.leechSessionSummaryLink')}
+                </Button>
+              </div>
+            )}
             <Button onClick={() => navigate('/flashcards')}>
               {t('flashcards.backToDecks')}
             </Button>
@@ -600,6 +659,16 @@ export const DeckReviewPage = () => {
                 )}
               </CardContent>
             </Card>
+
+            {leechHint && (
+              <div
+                className="mt-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning text-center animate-fade-in"
+                role="status"
+                aria-live="polite"
+              >
+                {t('flashcards.leechToast')}
+              </div>
+            )}
 
             <div className="mt-6">
               {!showAnswer ? (

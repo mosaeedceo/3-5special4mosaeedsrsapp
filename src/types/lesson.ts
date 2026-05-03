@@ -100,6 +100,12 @@ export interface Settings {
    * 0 / undefined disables. Default: 8.
    */
   leechThreshold?: number;
+  /**
+   * When true, suppress the mid-review "leech suspended" toast and instead
+   * surface a summary of suspended cards on the session-done card.
+   * Default: false (toast is shown).
+   */
+  quietLeechNotifications?: boolean;
   lastTtsVoiceByLang?: Record<string, string>; // BCP-47 lang -> last picked voiceURI
   lastReviewedDeckId?: string; // Last deck the user reviewed (for FAB's "Add card" default)
 }
@@ -183,4 +189,5 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderEnabled: false,
   reminderTime: '08:00',
   leechThreshold: 8,
+  quietLeechNotifications: false,
 };

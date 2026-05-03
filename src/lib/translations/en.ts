@@ -91,6 +91,8 @@ export const en = {
     leechToast: 'Card suspended (leech)',
     leechToastDesc: 'Too many lapses — this card was auto-suspended.',
     leechToastAction: 'Open card manager',
+    leechSessionSummary: '{count} card(s) auto-suspended as leeches this session.',
+    leechSessionSummaryLink: 'Open card manager',
     confirmDeleteCard: 'Delete card?',
     confirmDeleteCardDesc: 'This will permanently remove this card from the deck.',
     bulkAdd: 'Bulk add',
@@ -460,6 +462,8 @@ export const en = {
     leechThresholdHint: 'Auto-suspend a card after this many lapses (Again presses). You can unsuspend leeches from the card manager.',
     leechThresholdValue: '{count} lapses',
     leechThresholdOff: 'Off',
+    quietLeechNotifications: 'Quiet leech notifications',
+    quietLeechNotificationsHint: 'Skip the mid-review toast and instead show a summary of suspended leeches when the session ends.',
     
     // FAB Position
     fabPosition: 'Add Button Position',

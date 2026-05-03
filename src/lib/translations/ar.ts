@@ -93,6 +93,8 @@ export const ar: TranslationKeys = {
     leechToast: 'تم تعليق البطاقة (متعثرة)',
     leechToastDesc: 'كثرة النسيان — تم تعليق هذه البطاقة تلقائيًا.',
     leechToastAction: 'فتح إدارة البطاقات',
+    leechSessionSummary: 'تم تعليق {count} بطاقة تلقائيًا كمتعثرة في هذه الجلسة.',
+    leechSessionSummaryLink: 'فتح إدارة البطاقات',
     confirmDeleteCard: 'حذف البطاقة؟',
     confirmDeleteCardDesc: 'سيؤدي هذا إلى حذف البطاقة نهائيًا من الرزمة.',
     bulkAdd: 'إضافة جماعية',
@@ -462,6 +464,8 @@ export const ar: TranslationKeys = {
     leechThresholdHint: 'تعليق البطاقة تلقائيًا بعد عدد النسيان (ضغطات "مجدداً"). يمكنك إلغاء التعليق من إدارة البطاقات.',
     leechThresholdValue: '{count} نسيان',
     leechThresholdOff: 'متوقف',
+    quietLeechNotifications: 'إشعارات هادئة للبطاقات المتعثرة',
+    quietLeechNotificationsHint: 'تجاوز إشعار التنبيه أثناء المراجعة، وعرض ملخص بالبطاقات المعلَّقة عند انتهاء الجلسة.',
     
     // FAB Position
     fabPosition: 'موضع زر الإضافة',

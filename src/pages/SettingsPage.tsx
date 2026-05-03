@@ -518,6 +518,25 @@ export const SettingsPage = () => {
                 {t('settings.leechThresholdHint')}
               </p>
             </div>
+            {(data.settings.leechThreshold ?? 0) > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium truncate">
+                    {t('settings.quietLeechNotifications')}
+                  </span>
+                  <Switch
+                    checked={!!data.settings.quietLeechNotifications}
+                    onCheckedChange={on =>
+                      updateSettings({ quietLeechNotifications: on })
+                    }
+                    aria-label={t('settings.quietLeechNotifications')}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.quietLeechNotificationsHint')}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
