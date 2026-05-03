@@ -19,6 +19,7 @@ import { InstallVoicesDialog } from '@/components/InstallVoicesDialog';
 import { isInstallSupported } from '@/lib/ttsInstaller';
 import { useNavigate } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -486,30 +487,33 @@ export const SettingsPage = () => {
                     {t('settings.leechThreshold')}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {(data.settings.leechThreshold ?? 0) > 0
-                    ? t('settings.leechThresholdValue', {
-                        count: data.settings.leechThreshold ?? 0,
-                      })
-                    : t('settings.leechThresholdOff')}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {(data.settings.leechThreshold ?? 0) > 0
+                      ? t('settings.leechThresholdValue', {
+                          count: data.settings.leechThreshold ?? 0,
+                        })
+                      : t('settings.leechThresholdOff')}
+                  </span>
+                  <Switch
+                    checked={(data.settings.leechThreshold ?? 0) > 0}
+                    onCheckedChange={on =>
+                      updateSettings({ leechThreshold: on ? 8 : 0 })
+                    }
+                    aria-label={t('settings.leechThreshold')}
+                  />
+                </div>
               </div>
-              <Slider
-                min={3}
-                max={15}
-                step={1}
-                value={[
-                  (data.settings.leechThreshold ?? 0) === 0
-                    ? 3
-                    : Math.max(3, Math.min(15, data.settings.leechThreshold ?? 8)),
-                ]}
-                onValueChange={([v]) => {
-                  // Map slider position 3 → "Off" (0), 4..15 → that threshold.
-                  const next = v <= 3 ? 0 : v;
-                  updateSettings({ leechThreshold: next });
-                }}
-                className="w-full"
-              />
+              {(data.settings.leechThreshold ?? 0) > 0 && (
+                <Slider
+                  min={4}
+                  max={15}
+                  step={1}
+                  value={[Math.max(4, Math.min(15, data.settings.leechThreshold ?? 8))]}
+                  onValueChange={([v]) => updateSettings({ leechThreshold: v })}
+                  className="w-full"
+                />
+              )}
               <p className="text-xs text-muted-foreground">
                 {t('settings.leechThresholdHint')}
               </p>
