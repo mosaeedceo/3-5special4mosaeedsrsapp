@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, Volume2 } from 'lucide-react';
+import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, Volume2, BookOpen } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -41,12 +41,18 @@ import { CardEditorDialog } from '@/components/CardEditorDialog';
 import { CardManagerDialog } from '@/components/CardManagerDialog';
 import { BulkAddCardsDialog } from '@/components/BulkAddCardsDialog';
 import { DeckSettingsDialog } from '@/components/DeckSettingsDialog';
+import { FloatingAddButton, type FabAction } from '@/components/FloatingAddButton';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import type { Deck } from '@/types/lesson';
 import { cardDedupeKey, type ParsedTextRow } from '@/lib/cardTextParser';
 
 export const FlashcardsPage = () => {
   const navigate = useNavigate();
-  const { data, addDeck, deleteDeck, renameDeck, updateDeck, addCards, getDeckCards } =
+  const { data, addDeck, deleteDeck, renameDeck, updateDeck, addCards, getDeckCards, getLessonsForDeck, updateSettings } =
     useLocalStorage();
   const { containerClass, isTabletMode } = useDisplayMode(data.settings.displayMode);
   const { t, isRTL } = useTranslation();
@@ -419,6 +425,60 @@ export const FlashcardsPage = () => {
                     </DropdownMenu>
                   </div>
 
+                  {(() => {
+                    const linkedLessons = getLessonsForDeck(deck.id);
+                    if (linkedLessons.length === 0) return null;
+                    if (linkedLessons.length === 1) {
+                      const ll = linkedLessons[0];
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => navigate('/library', { state: { scrollToLessonId: ll.id } })}
+                          className="mb-2 inline-flex items-center gap-1 self-start text-[10px] h-5 px-1.5 rounded border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors max-w-full"
+                          aria-label={t('flashcards.openLesson')}
+                        >
+                          <BookOpen className="w-2.5 h-2.5 shrink-0" />
+                          <span className="truncate">{ll.title}</span>
+                        </button>
+                      );
+                    }
+                    return (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="mb-2 inline-flex items-center gap-1 self-start text-[10px] h-5 px-1.5 rounded border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+                          >
+                            <BookOpen className="w-2.5 h-2.5" />
+                            <span>{t('flashcards.openLessonsCount', { count: linkedLessons.length })}</span>
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="start"
+                          dir={isRTL ? 'rtl' : 'ltr'}
+                          className="w-56 p-1"
+                        >
+                          <div className="flex flex-col max-h-64 overflow-auto">
+                            {linkedLessons.map(ll => (
+                              <button
+                                key={ll.id}
+                                type="button"
+                                onClick={() => navigate('/library', { state: { scrollToLessonId: ll.id } })}
+                                className={cn(
+                                  "flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-accent/30 text-left",
+                                  isRTL && "text-right flex-row-reverse",
+                                )}
+                              >
+                                <BookOpen className="w-3 h-3 shrink-0 text-accent" />
+                                <span className="truncate">{ll.title}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  })()}
+
                   <Button
                     className="w-full mt-auto pt-0 h-9"
                     variant={s.due > 0 || s.isNew > 0 ? 'default' : 'outline'}
@@ -546,6 +606,49 @@ export const FlashcardsPage = () => {
           if (settingsDeck) updateDeck(settingsDeck.id, updates);
         }}
       />
+
+      {/* Floating Add Button: Add card / Bulk add / New deck */}
+      {decks.length > 0 && (() => {
+        const lastReviewedId = data.settings.lastReviewedDeckId;
+        const targetDeck =
+          (lastReviewedId && decks.find(d => d.id === lastReviewedId)) ||
+          decks[0];
+
+        const fabActions: FabAction[] = [
+          {
+            key: 'add-card',
+            label: targetDeck
+              ? t('flashcards.fabAddCardTo', { deck: targetDeck.name })
+              : t('flashcards.fabAddCard'),
+            icon: <Plus className="w-4 h-4" />,
+            disabled: !targetDeck,
+            onSelect: () => targetDeck && setAddCardTargetDeckId(targetDeck.id),
+          },
+          {
+            key: 'bulk-add',
+            label: t('flashcards.fabBulkAdd'),
+            icon: <ClipboardPaste className="w-4 h-4" />,
+            disabled: !targetDeck,
+            onSelect: () => targetDeck && setBulkAddDeck({ id: targetDeck.id, name: targetDeck.name }),
+          },
+          {
+            key: 'new-deck',
+            label: t('flashcards.fabNewDeck'),
+            icon: <Layers className="w-4 h-4" />,
+            onSelect: () => setCreateDeckOpen(true),
+          },
+        ];
+
+        return (
+          <FloatingAddButton
+            categories={[]}
+            position={data.settings.fabPosition || 'right'}
+            coordinates={data.settings.fabCoordinates}
+            onPositionChange={(pos, coords) => updateSettings({ fabPosition: pos, fabCoordinates: coords })}
+            actions={fabActions}
+          />
+        );
+      })()}
     </div>
   );
 };

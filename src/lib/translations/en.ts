@@ -95,6 +95,15 @@ export const en = {
     bulkPreviewTitle: 'Preview',
     bulkPreviewMore: '…and {count} more',
     bulkPreviewNoRowsHint: "Couldn't parse any rows — try switching the separator (Tab vs Comma) or check that each line has a front and back.",
+    openLesson: 'Open lesson',
+    openDeck: 'Open deck',
+    openLessonsCount: '{count} lessons',
+    cardsMatching: 'Cards matching ({count})',
+    fabAction: 'Add',
+    fabAddCard: 'Add card',
+    fabAddCardTo: 'Add card to {deck}',
+    fabBulkAdd: 'Bulk add cards',
+    fabNewDeck: 'New deck',
   },
 
   // Text-to-speech (per-deck settings + review playback)
@@ -266,6 +275,10 @@ export const en = {
     last7Days: 'Last 7 days',
     last30Days: 'Last 30 days',
     dayStreak: 'day streak',
+    scopeLessons: 'Lessons',
+    scopeCards: 'Cards',
+    scopeAll: 'All',
+    heatmapLegend: 'Reviews (lessons + cards)',
   },
 
   // Memory Strength Gauge
@@ -557,6 +570,8 @@ export const en = {
     default: 'Default',
     legacyBadge: 'Classic',
     categoryUsesLegacy: 'This category uses classic interval scheduling ({intervals} days)',
+    linkedDeck: 'Linked flashcard deck',
+    linkedDeckNone: 'No linked deck',
   },
 
   // Tags

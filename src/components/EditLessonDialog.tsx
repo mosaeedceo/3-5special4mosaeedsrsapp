@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { Lesson, Difficulty, DEFAULT_INTERVALS, LessonAttachment } from '@/types/lesson';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { Layers } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -60,12 +62,15 @@ export const EditLessonDialog = ({
   useFSRS = false 
 }: EditLessonDialogProps) => {
   const { t, isRTL } = useTranslation();
+  const { data: storeData } = useLocalStorage();
+  const decks = storeData.decks || [];
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(lesson.title);
   const [category, setCategory] = useState(lesson.category);
   const [subject, setSubject] = useState(lesson.subject);
   const [difficulty, setDifficulty] = useState<Difficulty>(lesson.difficulty);
   const [tags, setTags] = useState<string[]>(lesson.tags || []);
+  const [linkedDeckId, setLinkedDeckId] = useState<string>(lesson.linkedDeckId || '__none__');
   
   // Start Date state
   const [startDate, setStartDate] = useState<Date | undefined>(new Date(lesson.nextReviewDate));
@@ -108,6 +113,7 @@ export const EditLessonDialog = ({
       customIntervals: useCustomIntervals ? lessonIntervals : undefined,
       attachments: showAttachments ? (attachments.length > 0 ? attachments : undefined) : lesson.attachments,
       tags: tags.length > 0 ? tags : undefined,
+      linkedDeckId: linkedDeckId === '__none__' ? undefined : linkedDeckId,
     });
     setOpen(false);
   };
@@ -132,6 +138,7 @@ export const EditLessonDialog = ({
       setLessonIntervals(lesson.customIntervals || DEFAULT_INTERVALS);
       setAttachments(lesson.attachments || []);
       setTags(lesson.tags || []);
+      setLinkedDeckId(lesson.linkedDeckId || '__none__');
     }
     setOpen(isOpen);
   };
@@ -214,6 +221,25 @@ export const EditLessonDialog = ({
               suggestions={existingTags}
               compact
             />
+          </div>
+
+          {/* Linked Deck Section */}
+          <div className="space-y-1 sm:space-y-1.5">
+            <Label className="text-xs sm:text-sm flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              {t('lesson.linkedDeck')}
+            </Label>
+            <Select value={linkedDeckId} onValueChange={setLinkedDeckId}>
+              <SelectTrigger className="h-9 text-sm" dir={isRTL ? 'rtl' : 'ltr'}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent dir={isRTL ? 'rtl' : 'ltr'}>
+                <SelectItem value="__none__">{t('lesson.linkedDeckNone')}</SelectItem>
+                {decks.map(d => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Start Date Section */}

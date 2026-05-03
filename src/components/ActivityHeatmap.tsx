@@ -289,6 +289,7 @@ export const ActivityHeatmap = ({ activityHistory }: ActivityHeatmapProps) => {
               "flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[10px] text-muted-foreground order-1 sm:order-2",
               isRTL && "flex-row-reverse"
             )}>
+              <span className="mr-1">{t('stats.heatmapLegend')}</span>
               <span>{t('fsrs.fewerReviews')}</span>
               <div className="flex gap-0.5">
                 <div className="w-2 h-2 sm:w-[10px] sm:h-[10px] rounded-[2px] bg-muted/40 dark:bg-muted/20" />

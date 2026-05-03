@@ -1250,8 +1250,15 @@ const useLocalStorageInternal = () => {
       ...prev,
       decks: (prev.decks || []).filter(d => d.id !== deckId),
       cards: (prev.cards || []).filter(c => c.deckId !== deckId),
+      lessons: prev.lessons.map(l =>
+        l.linkedDeckId === deckId ? { ...l, linkedDeckId: undefined } : l,
+      ),
     }));
   }, []);
+
+  const getLessonsForDeck = useCallback((deckId: string): Lesson[] => {
+    return data.lessons.filter(l => l.linkedDeckId === deckId);
+  }, [data.lessons]);
 
   const addCards = useCallback((cards: Card[]) => {
     setData(prev => ({
@@ -1406,6 +1413,7 @@ const useLocalStorageInternal = () => {
     reviewCard,
     getDeckCards,
     getDueCards,
+    getLessonsForDeck,
   };
 };
 

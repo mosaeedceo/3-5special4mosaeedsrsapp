@@ -97,6 +97,15 @@ export const ar: TranslationKeys = {
     bulkPreviewTitle: 'معاينة',
     bulkPreviewMore: '…و{count} أخرى',
     bulkPreviewNoRowsHint: 'تعذّر تحليل أي صفوف — جرّب تبديل الفاصل (تبويب أو فاصلة) أو تأكّد أن كل سطر يحتوي على وجه وخلف.',
+    openLesson: 'افتح الدرس',
+    openDeck: 'افتح الرزمة',
+    openLessonsCount: '{count} دروس',
+    cardsMatching: 'بطاقات مطابقة ({count})',
+    fabAction: 'إضافة',
+    fabAddCard: 'إضافة بطاقة',
+    fabAddCardTo: 'إضافة بطاقة إلى {deck}',
+    fabBulkAdd: 'إضافة بطاقات دفعة واحدة',
+    fabNewDeck: 'رزمة جديدة',
   },
 
   // التحويل من نص إلى كلام (إعدادات الرزمة + تشغيل المراجعة)
@@ -268,6 +277,10 @@ export const ar: TranslationKeys = {
     last7Days: 'آخر 7 أيام',
     last30Days: 'آخر 30 يوم',
     dayStreak: 'سلسلة أيام',
+    scopeLessons: 'الدروس',
+    scopeCards: 'البطاقات',
+    scopeAll: 'الكل',
+    heatmapLegend: 'مراجعات (دروس + بطاقات)',
   },
 
   // Memory Strength Gauge
@@ -559,6 +572,8 @@ export const ar: TranslationKeys = {
     default: 'افتراضي',
     legacyBadge: 'كلاسيكي',
     categoryUsesLegacy: 'هذا التصنيف يستخدم Classic Mode ({intervals} يوم)',
+    linkedDeck: 'رزمة بطاقات مرتبطة',
+    linkedDeckNone: 'لا توجد رزمة مرتبطة',
   },
 
   // Tags

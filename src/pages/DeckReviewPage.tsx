@@ -50,7 +50,7 @@ const RATING_CONFIG: Record<FSRSRating, { Icon: typeof RotateCcw; className: str
 export const DeckReviewPage = () => {
   const { deckId } = useParams<{ deckId: string }>();
   const navigate = useNavigate();
-  const { data, getDueCards, reviewCard, addCards, updateCard, deleteCard } = useLocalStorage();
+  const { data, getDueCards, reviewCard, addCards, updateCard, deleteCard, updateSettings } = useLocalStorage();
   const { containerClass } = useDisplayMode(data.settings.displayMode);
   const { t, isRTL } = useTranslation();
   const { toast } = useToast();
@@ -63,6 +63,15 @@ export const DeckReviewPage = () => {
   const [speaking, setSpeaking] = useState(false);
 
   const deck = (data.decks || []).find(d => d.id === deckId);
+
+  // Remember last reviewed deck so the Flashcards FAB's "Add card" can target it.
+  // Re-runs once `deck` resolves to handle async hydration of localStorage data.
+  useEffect(() => {
+    if (deckId && deck) {
+      updateSettings({ lastReviewedDeckId: deckId });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckId, !!deck]);
   const deckFrontLang = deck?.ttsFrontLang;
   const deckBackLang = deck?.ttsBackLang;
   const ttsRate = deck?.ttsRate ?? 1.0;

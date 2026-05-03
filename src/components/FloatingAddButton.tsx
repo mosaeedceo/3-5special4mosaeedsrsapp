@@ -1,15 +1,28 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, ReactNode } from 'react';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { AddLessonDialog } from './AddLessonDialog';
 import { CategoryData, Difficulty, FabPosition } from '@/types/lesson';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+
+export interface FabAction {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  onSelect: () => void;
+  disabled?: boolean;
+}
 
 interface FloatingAddButtonProps {
   categories: string[];
   categoryData?: CategoryData[];
   existingTags?: string[];
-  onAdd: (lesson: {
+  onAdd?: (lesson: {
     title: string;
     category: string;
     subject: string;
@@ -22,6 +35,8 @@ interface FloatingAddButtonProps {
   position: 'left' | 'right';
   coordinates?: FabPosition;
   onPositionChange?: (position: 'left' | 'right', coordinates?: FabPosition) => void;
+  /** When provided, overrides the default Add-Lesson trigger with a popover sheet of actions. */
+  actions?: FabAction[];
 }
 
 const LONG_PRESS_DURATION = 500;
@@ -38,8 +53,10 @@ export const FloatingAddButton = ({
   position,
   coordinates,
   onPositionChange,
+  actions,
 }: FloatingAddButtonProps) => {
-  const { t } = useTranslation();
+  const { t, isRTL } = useTranslation();
+  const [actionsOpen, setActionsOpen] = useState(false);
   
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
@@ -180,20 +197,66 @@ export const FloatingAddButton = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <AddLessonDialog
-        categories={categories}
-        categoryData={categoryData}
-        existingTags={existingTags}
-        onAdd={onAdd}
-        useFSRS={useFSRS}
-        triggerClassName={cn(
-          "w-14 h-14 rounded-full shadow-lg flex items-center justify-center gradient-primary text-primary-foreground transition-all duration-300 active:scale-95",
-          isDragging 
-            ? "shadow-2xl ring-4 ring-primary/30 pointer-events-none" 
-            : "hover:shadow-xl hover:scale-105"
-        )}
-        triggerIcon={<Plus className="w-6 h-6" />}
-      />
+      {actions && actions.length > 0 ? (
+        <Popover open={actionsOpen} onOpenChange={setActionsOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={t('flashcards.fabAction')}
+              className={cn(
+                "w-14 h-14 rounded-full shadow-lg flex items-center justify-center gradient-primary text-primary-foreground transition-all duration-300 active:scale-95",
+                isDragging
+                  ? "shadow-2xl ring-4 ring-primary/30 pointer-events-none"
+                  : "hover:shadow-xl hover:scale-105"
+              )}
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align={position === 'left' ? 'start' : 'end'}
+            dir={isRTL ? 'rtl' : 'ltr'}
+            className="w-56 p-1"
+          >
+            <div className="flex flex-col">
+              {actions.map(a => (
+                <button
+                  key={a.key}
+                  type="button"
+                  disabled={a.disabled}
+                  onClick={() => {
+                    setActionsOpen(false);
+                    a.onSelect();
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 text-sm rounded-md text-left hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    isRTL && "text-right flex-row-reverse"
+                  )}
+                >
+                  <span className="text-primary shrink-0">{a.icon}</span>
+                  <span className="truncate">{a.label}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      ) : onAdd ? (
+        <AddLessonDialog
+          categories={categories}
+          categoryData={categoryData}
+          existingTags={existingTags}
+          onAdd={onAdd}
+          useFSRS={useFSRS}
+          triggerClassName={cn(
+            "w-14 h-14 rounded-full shadow-lg flex items-center justify-center gradient-primary text-primary-foreground transition-all duration-300 active:scale-95",
+            isDragging
+              ? "shadow-2xl ring-4 ring-primary/30 pointer-events-none"
+              : "hover:shadow-xl hover:scale-105"
+          )}
+          triggerIcon={<Plus className="w-6 h-6" />}
+        />
+      ) : null}
     </div>
   );
 };

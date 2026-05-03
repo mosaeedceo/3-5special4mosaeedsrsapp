@@ -1,6 +1,8 @@
 import { memo, useState, useMemo, useCallback } from 'react';
-import { Trash2, BookOpen, Paperclip, Copy, StickyNote, Infinity, AlertTriangle, GraduationCap, Brain, Hash, Moon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trash2, BookOpen, Paperclip, Copy, StickyNote, Infinity, AlertTriangle, GraduationCap, Brain, Hash, Moon, Layers } from 'lucide-react';
 import { Lesson, FSRSRating } from '@/types/lesson';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { DifficultyBadge } from './DifficultyBadge';
 import { ProgressBar } from './ProgressBar';
 import { EditLessonDialog } from './EditLessonDialog';
@@ -89,6 +91,11 @@ export const LessonCard = memo(({
 }: LessonCardProps) => {
   const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
   const { t, formatDate } = useTranslation();
+  const navigate = useNavigate();
+  const { data: storeData } = useLocalStorage();
+  const linkedDeck = lesson.linkedDeckId
+    ? (storeData.decks || []).find(d => d.id === lesson.linkedDeckId)
+    : undefined;
   
   // Memoize computed values to prevent recalculation on every render
   const { isToday, isCompleted, attachmentCount, hasNotes, stability, isAtRisk, retrievability, isSnoozed, dueLabel } = useMemo(() => {
@@ -274,6 +281,22 @@ export const LessonCard = memo(({
                 </div>
               </div>
 
+              {/* Linked deck chip */}
+              {linkedDeck && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/flashcards/${linkedDeck.id}/review`);
+                  }}
+                  className="mt-1.5 inline-flex items-center gap-1 text-[10px] h-5 px-1.5 rounded border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  aria-label={t('flashcards.openDeck')}
+                >
+                  <Layers className="w-2.5 h-2.5" />
+                  <span className="truncate max-w-[120px]">{linkedDeck.name}</span>
+                </button>
+              )}
+
               {/* Tags display */}
               {lesson.tags && lesson.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
@@ -418,6 +441,7 @@ export const LessonCard = memo(({
     prevProps.lesson.notes === nextProps.lesson.notes &&
     prevProps.lesson.fsrs?.stability === nextProps.lesson.fsrs?.stability &&
     prevProps.lesson.snoozedUntil === nextProps.lesson.snoozedUntil &&
+    prevProps.lesson.linkedDeckId === nextProps.lesson.linkedDeckId &&
     prevProps.lesson.tags?.length === nextProps.lesson.tags?.length &&
     (prevProps.lesson.tags?.every((tag, i) => tag === nextProps.lesson.tags?.[i]) ?? true) &&
     prevProps.isMissed === nextProps.isMissed &&

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -27,6 +27,14 @@ export const StatsPage = () => {
   
   const { completed, inProgress, total, masteryPercentage } = getMasteryStats();
 
+  type StatsScope = 'lessons' | 'cards' | 'all';
+  const [scope, setScope] = useState<StatsScope>('all');
+  const masteryStabilityDays = data.settings.masteryStabilityDays ?? 21;
+  const masteredCardsCount = useMemo(
+    () => (data.cards || []).filter(c => (c.fsrs?.stability || 0) >= masteryStabilityDays).length,
+    [data.cards, masteryStabilityDays],
+  );
+
   // Count mature Medical Board lessons (stability >= 21) to include in displayed mastered total
   const matureMedBoardCount = useMemo(() => {
     return data.lessons.filter(l => {
@@ -35,7 +43,11 @@ export const StatsPage = () => {
     }).length;
   }, [data.lessons, data.categoryData]);
 
-  const displayMastered = completed + matureMedBoardCount;
+  const lessonsMasteredTotal = completed + matureMedBoardCount;
+  const displayMastered =
+    scope === 'lessons' ? lessonsMasteredTotal
+    : scope === 'cards' ? masteredCardsCount
+    : lessonsMasteredTotal + masteredCardsCount;
   const todayCount = getTodayLessons().length;
   const missedCount = getMissedLessons().length;
 
@@ -204,6 +216,33 @@ export const StatsPage = () => {
 
       {/* Content */}
       <main className={cn(containerClass, 'mx-auto px-4 py-6 space-y-6')}>
+        {/* Scope toggle: Lessons / Cards / All */}
+        <div className="flex justify-center animate-fade-in">
+          <div
+            role="tablist"
+            aria-label="Stats scope"
+            className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5"
+          >
+            {(['lessons', 'cards', 'all'] as const).map(s => (
+              <button
+                key={s}
+                role="tab"
+                aria-selected={scope === s}
+                type="button"
+                onClick={() => setScope(s)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                  scope === s
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t(`stats.scope${s.charAt(0).toUpperCase() + s.slice(1)}` as 'stats.scopeLessons' | 'stats.scopeCards' | 'stats.scopeAll')}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 animate-fade-in">
           <Card>
@@ -215,14 +254,27 @@ export const StatsPage = () => {
           </Card>
           
           <Card 
-            className={cn("transition-all", displayMastered > 0 && "cursor-pointer hover:border-success/50 hover:shadow-sm active:scale-[0.97]")}
-            onClick={() => completed > 0 && navigate('/library', { state: { initialStatusFilter: 'completed' } })}
+            className={cn(
+              "transition-all",
+              displayMastered > 0 && scope !== 'cards' && completed > 0 && "cursor-pointer hover:border-success/50 hover:shadow-sm active:scale-[0.97]",
+              displayMastered > 0 && scope === 'cards' && masteredCardsCount > 0 && "cursor-pointer hover:border-success/50 hover:shadow-sm active:scale-[0.97]",
+            )}
+            onClick={() => {
+              if (scope === 'cards') {
+                if (masteredCardsCount > 0) navigate('/flashcards');
+              } else if (completed > 0) {
+                navigate('/library', { state: { initialStatusFilter: 'completed' } });
+              }
+            }}
           >
             <CardContent className="p-3 sm:p-4 text-center relative">
               <Trophy className="w-5 h-5 mx-auto mb-1 text-success" />
               <p className="text-xl font-heading font-bold text-foreground">{displayMastered}</p>
               <p className="text-xs text-muted-foreground leading-tight">{t('stats.mastered')}</p>
-              {matureMedBoardCount > 0 && completed === 0 && (
+              {scope === 'all' && masteredCardsCount > 0 && (
+                <p className="text-[9px] text-muted-foreground/60 mt-0.5 leading-tight">+{masteredCardsCount} cards</p>
+              )}
+              {scope !== 'cards' && matureMedBoardCount > 0 && completed === 0 && (
                 <p className="text-[9px] text-muted-foreground/60 mt-0.5 leading-tight">incl. {matureMedBoardCount} endless</p>
               )}
               {displayMastered > 0 && <NavChevron className="w-3 h-3 text-muted-foreground/50 absolute top-1 rtl:left-1 ltr:right-1" />}

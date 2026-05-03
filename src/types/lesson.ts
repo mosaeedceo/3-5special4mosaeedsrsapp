@@ -46,6 +46,7 @@ export interface Lesson {
   notes?: string; // Optional study notes for this lesson
   tags?: string[]; // Optional hashtags for categorization (without # prefix)
   snoozedUntil?: string; // ISO date string - lesson is hidden until this date
+  linkedDeckId?: string; // Optional flashcard deck linked to this lesson
 }
 
 export interface CategoryData {
@@ -95,6 +96,7 @@ export interface Settings {
   reminderEnabled?: boolean;
   reminderTime?: string; // HH:MM 24-hour format
   lastTtsVoiceByLang?: Record<string, string>; // BCP-47 lang -> last picked voiceURI
+  lastReviewedDeckId?: string; // Last deck the user reviewed (for FAB's "Add card" default)
 }
 
 export interface ActivityRecord {
