@@ -1021,10 +1021,23 @@ const LanguageDeckCard = ({
               )}
               <span className="font-medium">{renderHeadword(front)}</span>
             </div>
-            <div
-              className="mt-2 text-2xl font-semibold anki-card-content"
-              dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(back) }}
-            />
+            <div className="mt-2 flex items-center justify-center gap-2">
+              {showBackSpeaker && (
+                <button
+                  type="button"
+                  onClick={onSpeakBack}
+                  className="text-sky-400 hover:text-sky-500 transition-colors"
+                  aria-label={speakLabel}
+                  title={speakLabel}
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
+              )}
+              <div
+                className="text-2xl font-semibold anki-card-content"
+                dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(back) }}
+              />
+            </div>
             {audioBack.map((url, i) => (
               <AudioPlayer key={`ab-${i}`} url={url} />
             ))}
