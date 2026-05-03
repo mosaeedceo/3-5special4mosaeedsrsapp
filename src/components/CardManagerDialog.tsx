@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Pencil, Trash2, Plus, ClipboardPaste, Pause, Play } from 'lucide-react';
+import { Pencil, Trash2, Plus, ClipboardPaste, Pause, Play, Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ import { Card as FlashCard } from '@/types/lesson';
 import { CardEditorDialog } from './CardEditorDialog';
 import { BulkAddCardsDialog } from './BulkAddCardsDialog';
 import { cardDedupeKey, type ParsedTextRow } from '@/lib/cardTextParser';
+import { migrateTagsToExample } from '@/lib/cardTagsToExampleMigration';
 import { cn } from '@/lib/utils';
 
 interface CardManagerDialogProps {
@@ -52,7 +53,7 @@ export const CardManagerDialog = ({
 }: CardManagerDialogProps) => {
   const { t, isRTL } = useTranslation();
   const { toast } = useToast();
-  const { data, addCards, updateCard, deleteCard } = useLocalStorage();
+  const { data, addCards, updateCard, deleteCard, replaceCards } = useLocalStorage();
 
   const [editingCard, setEditingCard] = useState<FlashCard | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -257,6 +258,19 @@ export const CardManagerDialog = ({
     });
   };
 
+  const handleCleanupTags = () => {
+    const allCards = data.cards || [];
+    const result = migrateTagsToExample(allCards, deckId);
+    if (result.changedCount === 0) {
+      toast({ title: t('flashcards.cleanupTagsNothing') });
+      return;
+    }
+    replaceCards(result.cards);
+    toast({
+      title: t('flashcards.cleanupTagsRan', { count: result.changedCount }),
+    });
+  };
+
   const handleDeleteConfirm = async () => {
     if (!confirmDeleteId) return;
     await deleteCard(confirmDeleteId);
@@ -278,6 +292,16 @@ export const CardManagerDialog = ({
               {t('flashcards.cardsCount', { count: deckCards.length })}
             </p>
             <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCleanupTags}
+                title={t('flashcards.cleanupTagsTooltip')}
+                aria-label={t('flashcards.cleanupTagsTooltip')}
+              >
+                <Sparkles className="w-4 h-4 mr-1.5" />
+                {t('flashcards.cleanupTags')}
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
                 <ClipboardPaste className="w-4 h-4 mr-1.5" />
                 {t('flashcards.bulkAdd')}

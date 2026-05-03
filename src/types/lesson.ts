@@ -108,6 +108,14 @@ export interface Settings {
   quietLeechNotifications?: boolean;
   lastTtsVoiceByLang?: Record<string, string>; // BCP-47 lang -> last picked voiceURI
   lastReviewedDeckId?: string; // Last deck the user reviewed (for FAB's "Add card" default)
+  /**
+   * One-shot data migrations that have already run on this user's data.
+   * Tracked so we don't repeatedly walk every card on each app start.
+   */
+  migrations?: {
+    /** Promoted sentence-shaped `tags` arrays into the `example` field. */
+    tagsToExample?: boolean;
+  };
 }
 
 export interface ActivityRecord {

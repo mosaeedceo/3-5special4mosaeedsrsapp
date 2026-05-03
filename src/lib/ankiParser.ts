@@ -21,6 +21,7 @@ import {
   detectSeparator as sharedDetectSeparator,
   isHeaderRow as sharedIsHeaderRow,
   parseCardText as sharedParseCardText,
+  looksLikeSentence,
 } from '@/lib/cardTextParser';
 
 export interface ParsedMedia {
@@ -494,7 +495,17 @@ export const parseAnkiPackage = async (file: File): Promise<ImportResult[]> => {
     if (!model) continue;
 
     const fields = note.flds.split(FIELD_SEP);
-    const tags = note.tags.trim().split(/\s+/).filter(Boolean);
+    const rawTagsString = note.tags.trim();
+    let tags = rawTagsString ? rawTagsString.split(/\s+/).filter(Boolean) : [];
+    // If the Anki "tags" string is actually a sentence (e.g. someone exported
+    // a CSV with `front, back, sentence` and the sentence ended up in the
+    // tags slot), promote it to an example field instead of polluting the
+    // card with single-word tag badges.
+    let promotedExample: string | undefined;
+    if (tags.length >= 2 && looksLikeSentence(rawTagsString)) {
+      promotedExample = rawTagsString;
+      tags = [];
+    }
     const isCloze = model.type === 1;
     const refs = new Set<string>();
 
@@ -517,6 +528,7 @@ export const parseAnkiPackage = async (file: File): Promise<ImportResult[]> => {
         clozeIndex: clozeIdx,
         clozeSource: sourceText,
         tags: tags.length ? tags : undefined,
+        example: promotedExample,
         dateAdded: now,
         nextReviewDate: now,
       }, refs);
@@ -549,6 +561,7 @@ export const parseAnkiPackage = async (file: File): Promise<ImportResult[]> => {
         front: stripAnkiFormatting(front),
         back: stripAnkiFormatting(back),
         tags: tags.length ? tags : undefined,
+        example: promotedExample,
         dateAdded: now,
         nextReviewDate: now,
       }, refs);

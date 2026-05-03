@@ -119,6 +119,48 @@ export const isHeaderRow = (parts: string[]): boolean => {
   return hasFront && hasBack && recognized === parts.filter(c => (c || '').trim().length > 0).length;
 };
 
+/**
+ * Heuristic: does this string look like a sentence rather than a list of tags?
+ *
+ * Used by both the importer and the in-app migration to recover example
+ * sentences that were accidentally stored in the `tags` column (the
+ * positional importer used to put column 3 into tags, so a 3-column file
+ * `front<TAB>back<TAB>example` would chop the sentence into single-word
+ * "tags" like Die / Straße / ist / …).
+ *
+ * A value is treated as a sentence when it contains internal whitespace AND
+ * meets one of these signals:
+ *   - >= 4 tokens
+ *   - total length >= 25 chars
+ *   - ends with sentence punctuation (.?!… and CJK/Arabic equivalents)
+ *   - contains a comma / Arabic comma
+ *   - starts with an uppercase / RTL letter and has multi-token mixed case
+ *     (typical prose shape)
+ *
+ * Real tag lists like `verb common a1` or `level-1 noun` come back false.
+ */
+export const looksLikeSentence = (text: string): boolean => {
+  const s = (text || '').trim();
+  if (!s) return false;
+  // Single token = tag, never a sentence.
+  if (!/\s/.test(s)) return false;
+  const tokens = s.split(/\s+/);
+  if (tokens.length >= 4) return true;
+  if (s.length >= 25) return true;
+  if (/[.?!…。！？؟]$/.test(s)) return true;
+  if (/[,،]/.test(s)) return true;
+  // Mixed-case prose: starts with an uppercase / non-Latin letter and has
+  // at least one lowercase-starting token after it.
+  if (
+    /^[\p{Lu}\p{Lo}]/u.test(s) &&
+    tokens.length >= 2 &&
+    tokens.slice(1).some(t => /^[\p{Ll}]/u.test(t))
+  ) {
+    return true;
+  }
+  return false;
+};
+
 export interface ParsedTextRow {
   front: string;
   back: string;
@@ -241,15 +283,27 @@ export const parseCardText = (
     if (!front || !back) continue;
 
     const tagsRaw = pickCell(parts, columnMap.tags);
-    const tags = tagsRaw ? tagsRaw.split(/\s+/).filter(Boolean) : undefined;
-
     const langFrontRaw = pickCell(parts, columnMap.langFront);
     const langBackRaw = pickCell(parts, columnMap.langBack);
     const langFront = langFrontRaw || undefined;
     const langBack = langBackRaw || undefined;
     const exampleRaw = pickCell(parts, columnMap.example);
     const langExampleRaw = pickCell(parts, columnMap.langExample);
-    const example = exampleRaw || undefined;
+
+    // Promote a sentence-shaped tags cell to the example column when no
+    // dedicated example is provided. This recovers the common 3-column
+    // `front, back, example sentence` layout that previously had its
+    // sentence chopped into single-word tag badges.
+    let promotedExample: string | undefined;
+    let effectiveTagsRaw = tagsRaw;
+    if (tagsRaw && !exampleRaw && looksLikeSentence(tagsRaw)) {
+      promotedExample = tagsRaw;
+      effectiveTagsRaw = '';
+    }
+    const tags = effectiveTagsRaw
+      ? effectiveTagsRaw.split(/\s+/).filter(Boolean)
+      : undefined;
+    const example = exampleRaw || promotedExample || undefined;
     const langExample = langExampleRaw || undefined;
 
     rows.push({ front, back, tags, langFront, langBack, example, langExample });

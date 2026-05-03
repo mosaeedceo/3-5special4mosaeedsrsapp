@@ -5,6 +5,7 @@ import { isNativePlatform } from '@/lib/platform';
 import { getData, saveData, getInitialDataSync } from '@/lib/storage';
 import { deleteLessonAttachments } from '@/lib/fileCleanup';
 import { processReview, migrateToFSRS } from '@/lib/fsrs';
+import { migrateTagsToExample } from '@/lib/cardTagsToExampleMigration';
 import { prepareAttachmentsForExport, restoreAttachmentsFromImport } from '@/lib/fileUtils';
 import { toLocalDateStr, getTodayLocalStr } from '@/lib/date';
 
@@ -158,6 +159,39 @@ const useLocalStorageInternal = () => {
 
   // Normalization is now applied at load time (in useState initializer and async load path)
   // so no separate useEffect is needed here.
+
+  // One-shot migration: recover example sentences that earlier imports
+  // accidentally stored as a string of single-word tags. Runs once per
+  // user (gated by settings.migrations.tagsToExample) and only after the
+  // async hydrate (if any) has populated cards.
+  const migrationRanRef = useRef(false);
+  useEffect(() => {
+    if (migrationRanRef.current) return;
+    if (!isLoaded) return;
+    if (data.settings.migrations?.tagsToExample) {
+      migrationRanRef.current = true;
+      return;
+    }
+    const cards = data.cards || [];
+    const result = migrateTagsToExample(cards);
+    migrationRanRef.current = true;
+    if (result.changedCount > 0) {
+      console.log(
+        `[useLocalStorage] tagsToExample migration: promoted ${result.changedCount} card(s).`,
+      );
+    }
+    setData(prev => ({
+      ...prev,
+      cards: result.changedCount > 0 ? result.cards : prev.cards,
+      settings: {
+        ...prev.settings,
+        migrations: {
+          ...(prev.settings.migrations || {}),
+          tagsToExample: true,
+        },
+      },
+    }));
+  }, [isLoaded, data.cards, data.settings.migrations]);
 
   // Save data whenever it changes (debounced for performance)
   useEffect(() => {
@@ -1276,6 +1310,12 @@ const useLocalStorageInternal = () => {
     }));
   }, []);
 
+  /** Replace the entire cards array (used by bulk migrations like the
+   *  manual "Clean up imported tags" action). */
+  const replaceCards = useCallback((cards: Card[]) => {
+    setData(prev => ({ ...prev, cards }));
+  }, []);
+
   const deleteCard = useCallback(async (cardId: string) => {
     const card = (dataRef.current.cards || []).find(c => c.id === cardId);
     if (card && isNativePlatform()) {
@@ -1544,6 +1584,7 @@ const useLocalStorageInternal = () => {
     deleteDeck,
     addCards,
     updateCard,
+    replaceCards,
     deleteCard,
     reviewCard,
     getDeckCards,
