@@ -66,6 +66,30 @@ export const scheduleDailyReminder = async (
   }
 };
 
+/**
+ * Register a handler invoked when the user taps the daily reminder
+ * notification. Returns an unsubscribe function. No-op on web.
+ */
+export const registerReminderTapHandler = async (
+  handler: () => void,
+): Promise<() => void> => {
+  if (!isNativePlatform()) return () => {};
+  try {
+    const { LocalNotifications } = await import('@capacitor/local-notifications');
+    const listener = await LocalNotifications.addListener(
+      'localNotificationActionPerformed',
+      (action) => {
+        if (action.notification?.id === REMINDER_ID) handler();
+      },
+    );
+    return () => {
+      listener.remove().catch(() => {});
+    };
+  } catch {
+    return () => {};
+  }
+};
+
 export const cancelReminder = async (): Promise<void> => {
   if (!isNativePlatform()) return;
   try {

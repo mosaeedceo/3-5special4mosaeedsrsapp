@@ -1,6 +1,6 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { BrowsePage } from "./pages/BrowsePage";
 import { StatsPage } from "./pages/StatsPage";
@@ -16,7 +16,7 @@ import { loadTheme, applyTheme } from "@/lib/themeStorage";
 import { incrementQuoteIndex } from "@/lib/quoteStorage";
 import { useLanguage } from "@/hooks/useTranslation";
 import { LocalStorageProvider, useLocalStorage } from "@/hooks/useLocalStorage";
-import { scheduleDailyReminder } from "@/lib/reminders";
+import { scheduleDailyReminder, registerReminderTapHandler } from "@/lib/reminders";
 import { SessionHistoryProvider } from "@/contexts/SessionHistoryContext";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -115,6 +115,26 @@ const RedirectToBrowse = ({ view }: { view: 'library' | 'categories' }) => {
 
 const AppContent = () => {
   const { data, getTodayDueCount } = useLocalStorage();
+  const navigate = useNavigate();
+
+  // When the user taps the daily reminder notification, jump them straight
+  // to the Home page so they can begin a review session immediately rather
+  // than landing on whatever screen the app was last on.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    registerReminderTapHandler(() => {
+      navigate('/');
+    }).then((unsub) => {
+      if (cancelled) unsub();
+      else unsubscribe = unsub;
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [navigate]);
 
   // Increment quote index on each app launch
   useEffect(() => {
