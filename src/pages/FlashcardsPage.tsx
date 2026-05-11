@@ -135,7 +135,8 @@ export const FlashcardsPage = () => {
         return [front, back, tags].join('\t');
       });
       const csv = rows.join('\n');
-      const filename = deck.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '') + '.csv';
+      const safeName = deck.name.replace(/\s+/g, '_').replace(/[/\\:*?"<>|]/g, '') || 'deck_export';
+      const filename = safeName + '.csv';
       const { isNativePlatform } = await import('@/lib/platform');
       if (isNativePlatform()) {
         const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
@@ -158,9 +159,10 @@ export const FlashcardsPage = () => {
         URL.revokeObjectURL(url);
       }
       toast({ title: t('flashcards.exportSuccess', { count: cards.length, deck: deck.name }) });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[FlashcardsPage] export error', err);
-      toast({ title: t('flashcards.exportFailed'), description: err?.message || String(err), variant: 'destructive' });
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: t('flashcards.exportFailed'), description: message, variant: 'destructive' });
     }
   };
 
