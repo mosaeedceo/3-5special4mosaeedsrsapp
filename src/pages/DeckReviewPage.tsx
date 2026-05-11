@@ -471,9 +471,13 @@ export const DeckReviewPage = () => {
                 editLabel={t('flashcards.editCard')}
                 audioFront={resolved.audioFront}
                 audioBack={resolved.audioBack}
+                onFlip={() => { if (!showAnswer) setShowAnswer(true); }}
               />
             ) : (
-              <Card className="overflow-hidden">
+              <Card
+                className={cn('overflow-hidden', !showAnswer && 'cursor-pointer')}
+                onClick={() => { if (!showAnswer) setShowAnswer(true); }}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-3">
                     <Badge variant="outline" className="text-[10px]">
@@ -519,50 +523,34 @@ export const DeckReviewPage = () => {
               </div>
             )}
 
-            <div className="mt-6">
-              {!showAnswer ? (
-                <Button
-                  className="w-full h-12 text-base"
-                  onClick={() => setShowAnswer(true)}
-                >
-                  {t('flashcards.showAnswer')}
-                </Button>
-              ) : (
-                <div className="grid grid-cols-4 gap-2">
-                  {(['again', 'hard', 'good', 'easy'] as FSRSRating[]).map(rating => {
-                    const cfg = RATING_CONFIG[rating];
-                    const Icon = cfg.Icon;
-                    const opt = reviewOptions?.[rating];
-                    return (
-                      <Button
-                        key={rating}
-                        variant="outline"
-                        className={cn(
-                          'flex flex-col items-center gap-1 h-auto py-3 px-1 border-2',
-                          cfg.className,
-                        )}
-                        onClick={() => handleRate(rating)}
-                      >
-                        <Icon className="w-5 h-5" />
-                        <span className="font-semibold text-xs">{t(cfg.labelKey)}</span>
-                        {opt && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
-                            {opt.label}
-                          </Badge>
-                        )}
-                      </Button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <p
-              className="hidden md:block text-center text-[11px] text-muted-foreground mt-3"
-              aria-hidden="true"
-            >
-              {t('review.shortcutsHint')}
-            </p>
+            {showAnswer && (
+              <div className="mt-6 grid grid-cols-4 gap-2">
+                {(['again', 'hard', 'good', 'easy'] as FSRSRating[]).map(rating => {
+                  const cfg = RATING_CONFIG[rating];
+                  const Icon = cfg.Icon;
+                  const opt = reviewOptions?.[rating];
+                  return (
+                    <Button
+                      key={rating}
+                      variant="outline"
+                      className={cn(
+                        'flex flex-col items-center gap-1 h-auto py-3 px-1 border-2',
+                        cfg.className,
+                      )}
+                      onClick={() => handleRate(rating)}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="font-semibold text-xs">{t(cfg.labelKey)}</span>
+                      {opt && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                          {opt.label}
+                        </Badge>
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
       </main>
@@ -698,10 +686,22 @@ interface LanguageDeckCardProps {
   editLabel: string;
   audioFront: string[];
   audioBack: string[];
+  onFlip: () => void;
 }
 
-const StackedPaper = ({ children }: { children: React.ReactNode }) => (
-  <div className="relative mx-auto w-full max-w-md">
+const StackedPaper = ({
+  children,
+  onClick,
+  clickable,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  clickable?: boolean;
+}) => (
+  <div
+    className={cn('relative mx-auto w-full max-w-md', clickable && 'cursor-pointer')}
+    onClick={onClick}
+  >
     {/* Two paper layers behind the main card */}
     <div
       className="absolute inset-0 rounded-2xl bg-card border border-border shadow-sm"
@@ -728,9 +728,10 @@ const LanguageDeckCard = ({
   editLabel,
   audioFront,
   audioBack,
+  onFlip,
 }: LanguageDeckCardProps) => {
   return (
-    <StackedPaper>
+    <StackedPaper onClick={!showAnswer ? onFlip : undefined} clickable={!showAnswer}>
       <div className="min-h-[360px] sm:min-h-[420px] px-6 py-8 flex flex-col items-center justify-center text-center">
         {showAnswer ? (
           // ---------- BACK ----------
