@@ -336,7 +336,7 @@ export const LibraryPage = ({ inBrowse }: { inBrowse?: boolean } = {}) => {
       </header>
 
       {/* Content */}
-      <main className={cn(containerClass, 'mx-auto px-4 py-4')}>
+      <main className={cn(containerClass, 'mx-auto px-4 py-4 pt-[4px] pb-[4px]')}>
         {/* Search & Filters */}
         <div className="mb-4">
           <SearchFilters
