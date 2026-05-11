@@ -841,18 +841,6 @@ const useLocalStorageInternal = () => {
     }
   }, [data.settings.theme, data.settings.colorTheme, data.settings.displayMode]);
 
-  const getTodayLessons = useCallback(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return data.lessons.filter(lesson => {
-      if (lesson.completed) return false;
-      const reviewDate = new Date(lesson.nextReviewDate);
-      reviewDate.setHours(0, 0, 0, 0);
-      return reviewDate <= today;
-    });
-  }, [data.lessons]);
-
   // Helper to check if a lesson is currently snoozed
   const isLessonSnoozed = useCallback((lesson: Lesson): boolean => {
     const today = new Date();
@@ -875,6 +863,19 @@ const useLocalStorageInternal = () => {
     
     return false;
   }, [data.categoryData]);
+
+  const getTodayLessons = useCallback(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return data.lessons.filter(lesson => {
+      if (lesson.completed) return false;
+      if (isLessonSnoozed(lesson)) return false;
+      const reviewDate = new Date(lesson.nextReviewDate);
+      reviewDate.setHours(0, 0, 0, 0);
+      return reviewDate.getTime() === today.getTime();
+    });
+  }, [data.lessons, isLessonSnoozed]);
 
   // Helper to check if a category is snoozed
   const isCategorySnoozed = useCallback((categoryName: string): string | null => {
