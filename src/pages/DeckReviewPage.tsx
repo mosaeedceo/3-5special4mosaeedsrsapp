@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Sparkles, Volume2, RotateCcw, Brain, Zap, Plus, Pencil, Trash2, MoreVertical, Square, BookOpen } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Volume2, RotateCcw, Brain, Zap, Plus, Pencil, Trash2, MoreVertical, BookOpen } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -27,19 +27,11 @@ import {
 import { resolveCardMedia, sanitizeCardHtml } from '@/lib/cardMedia';
 import { getCardReviewOptions } from '@/lib/cardFsrs';
 import { FSRSRating, Card as FlashCard } from '@/types/lesson';
-import { speak as ttsSpeak, cancel as ttsCancel, subscribeSpeaking } from '@/lib/tts';
-import { detectLanguage } from '@/lib/langDetect';
 import { looksLikeLanguageDeck } from '@/lib/languageDeckDetect';
 import { cn } from '@/lib/utils';
 import { CardEditorDialog } from '@/components/CardEditorDialog';
-import { InstallVoicesDialog } from '@/components/InstallVoicesDialog';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
-import { checkLanguageStatus, isInstallSupported } from '@/lib/ttsInstaller';
-
-// Module-scoped session memory: deck IDs we've already prompted/dismissed for
-// during the current app session. Cleared on full app reload.
-const promptedDecksThisSession = new Set<string>();
 
 const RATING_CONFIG: Record<FSRSRating, { Icon: typeof RotateCcw; className: string; labelKey: string }> = {
   again: { Icon: RotateCcw, className: 'bg-danger/10 hover:bg-danger/20 text-danger border-danger/30', labelKey: 'ratings.again' },
@@ -63,9 +55,7 @@ export const DeckReviewPage = () => {
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [editCardOpen, setEditCardOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [installVoicesOpen, setInstallVoicesOpen] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
   // IDs auto-suspended as leeches during this review session. When the
   // "Quiet leech notifications" setting is on, we skip the per-card toast
   // and instead surface them in the session-done summary.
@@ -85,11 +75,6 @@ export const DeckReviewPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckId, !!deck]);
-  const deckFrontLang = deck?.ttsFrontLang;
-  const deckBackLang = deck?.ttsBackLang;
-  const ttsRate = deck?.ttsRate ?? 1.0;
-  const ttsAutoPlay = deck?.ttsAutoPlay ?? false;
-
   // Snapshot due-card IDs once per session so the queue doesn't shrink mid-session.
   // When invoked with a Custom Study filter, build the queue from that scope
   // instead of the regular due-card list.
@@ -143,16 +128,10 @@ export const DeckReviewPage = () => {
     return () => { cancelled = true; };
   }, [currentCard]);
 
-  // Reset reveal state when moving to next card; cancel any in-flight TTS so cards don't overlap
+  // Reset reveal state when moving to next card.
   useEffect(() => {
     setShowAnswer(false);
-    ttsCancel();
   }, [position]);
-
-  // Cancel TTS on unmount / route change
-  useEffect(() => {
-    return () => { ttsCancel(); };
-  }, []);
 
   // Clear any pending leech-hint timer on unmount to avoid setState on
   // unmounted component warnings if the user leaves mid-fade.
@@ -165,39 +144,9 @@ export const DeckReviewPage = () => {
     };
   }, []);
 
-  // Mirror the global TTS speaking-state into local state so Stop/Replay UI
-  // reflects reality on both web and native.
-  useEffect(() => {
-    return subscribeSpeaking(setSpeaking);
-  }, []);
-
-  // Effective per-card language: explicit card override → auto-detect from text
-  // → deck default. The voice URI is only meaningful when the lang matches the
-  // deck-configured language; if detection picked a different lang, we let the
-  // platform pick a default voice for that language.
-  const effectiveFrontLang =
-    currentCard?.ttsLangFront ||
-    (resolved ? detectLanguage(resolved.front) : null) ||
-    deckFrontLang ||
-    '';
-  const effectiveBackLang =
-    currentCard?.ttsLangBack ||
-    (resolved ? detectLanguage(resolved.back) : null) ||
-    deckBackLang ||
-    '';
-  // Example uses its own override → auto-detect → fall back to the front
-  // language (examples are usually in the target/front language).
-  const effectiveExampleLang =
-    currentCard?.ttsLangExample ||
-    (currentCard?.example ? detectLanguage(currentCard.example) : null) ||
-    effectiveFrontLang ||
-    '';
-
-  // True when the deck has a target language configured (front OR back), OR
-  // when its card content looks like a vocabulary deck (short term -> short
-  // translation, or most cards carry an `example` sentence). Language decks
-  // get a dedicated stacked-paper layout matching the design — this lets
-  // imported Anki vocab decks pick it up automatically without needing TTS.
+  // True when the deck looks like a vocabulary / language-learning deck.
+  // Language decks get a dedicated stacked-paper layout matching the design —
+  // this lets imported Anki vocab decks pick it up automatically.
   const deckCards = useMemo(
     () => (deckId ? allCards.filter(c => c.deckId === deckId) : []),
     [allCards, deckId],
@@ -206,118 +155,6 @@ export const DeckReviewPage = () => {
     () => looksLikeLanguageDeck(deck, deckCards),
     [deck, deckCards],
   );
-
-  const speakSide = (side: 'front' | 'back' | 'example') => {
-    if (!resolved) return;
-    const lang =
-      side === 'front'
-        ? effectiveFrontLang
-        : side === 'back'
-          ? effectiveBackLang
-          : effectiveExampleLang;
-    if (!lang) return;
-    const deckLang =
-      side === 'front' ? deckFrontLang : side === 'back' ? deckBackLang : deckFrontLang;
-    const deckVoice =
-      side === 'front'
-        ? deck?.ttsFrontVoiceURI
-        : side === 'back'
-          ? deck?.ttsBackVoiceURI
-          : deck?.ttsFrontVoiceURI;
-    // Only reuse the deck-configured voice if the resolved language matches
-    // what the deck voice was picked for; otherwise let the platform default.
-    const voiceURI = lang === deckLang ? deckVoice : undefined;
-    const text =
-      side === 'front'
-        ? resolved.front
-        : side === 'back'
-          ? resolved.back
-          : (currentCard?.example ?? '');
-    if (!text) return;
-    ttsSpeak({
-      text,
-      lang,
-      voiceURI,
-      rate: ttsRate,
-      onError: (err) => {
-        if (err.kind === 'unsupportedLang' && isInstallSupported()) {
-          // Voice data isn't installed for this language — open the install
-          // flow instead of silently doing nothing.
-          setInstallVoicesOpen(true);
-        } else if (err.kind === 'unavailable') {
-          toast({
-            title: t('tts.engineMissing'),
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: t('tts.speakFailed'),
-            description: err.message,
-            variant: 'destructive',
-          });
-        }
-      },
-    });
-  };
-
-  // Auto-prompt: if this deck wants TTS but the required system voices aren't
-  // installed, offer the install flow once per deck per app session. Native
-  // Android only; silently no-ops on web/iOS.
-  useEffect(() => {
-    if (!deckId || !deck) return;
-    if (!isInstallSupported()) return;
-    if (promptedDecksThisSession.has(deckId)) return;
-
-    const wantsTts = !!(ttsAutoPlay || deckFrontLang || deckBackLang);
-    if (!wantsTts) return;
-
-    const langs = Array.from(
-      new Set([deckFrontLang, deckBackLang].filter((l): l is string => !!l)),
-    );
-    if (langs.length === 0) return;
-
-    let cancelled = false;
-    (async () => {
-      const statuses = await Promise.all(langs.map(l => checkLanguageStatus(l)));
-      if (cancelled) return;
-      const needsInstall = statuses.some(s => s === 'missing' || s === 'engineMissing');
-      if (!needsInstall) return;
-      // Mark as prompted up-front so we never re-prompt this session, even
-      // if the user dismisses without acting.
-      promptedDecksThisSession.add(deckId);
-      toast({
-        title: t('tts.installPromptTitle'),
-        description: t('tts.installPromptDesc'),
-        action: (
-          <ToastAction
-            altText={t('tts.installPromptCta')}
-            onClick={() => setInstallVoicesOpen(true)}
-          >
-            {t('tts.installPromptCta')}
-          </ToastAction>
-        ),
-      });
-    })();
-
-    return () => { cancelled = true; };
-    // Run once per deck mount; deck/lang values are stable for a given deckId.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckId]);
-
-  // Auto-play front when a new card is shown
-  useEffect(() => {
-    if (!ttsAutoPlay || !effectiveFrontLang || !resolved) return;
-    speakSide('front');
-    // We intentionally only depend on the resolved content + autoplay/lang flags
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolved, ttsAutoPlay, effectiveFrontLang]);
-
-  // Auto-play back when the answer is revealed
-  useEffect(() => {
-    if (!ttsAutoPlay || !effectiveBackLang || !resolved || !showAnswer) return;
-    speakSide('back');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAnswer, resolved, ttsAutoPlay, effectiveBackLang]);
 
   if (!deck) {
     return (
@@ -399,7 +236,6 @@ export const DeckReviewPage = () => {
         addCardOpen ||
         editCardOpen ||
         confirmDeleteOpen ||
-        installVoicesOpen ||
         exitConfirmOpen
       ) return;
       const target = e.target as HTMLElement | null;
@@ -436,13 +272,6 @@ export const DeckReviewPage = () => {
         if (!showAnswer) setShowAnswer(true);
         return;
       }
-      const k = e.key.toLowerCase();
-      if (k === 'r') {
-        e.preventDefault();
-        const side: 'front' | 'back' = showAnswer ? 'back' : 'front';
-        speakSide(side);
-        return;
-      }
       if (showAnswer) {
         const ratingMap: Record<string, FSRSRating> = {
           '1': 'again',
@@ -459,21 +288,16 @@ export const DeckReviewPage = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // speakSide / handleRate / handleExit close over the latest state via the
-    // listed deps; the listener is re-registered on relevant changes.
+    // handleRate / handleExit close over the latest state via the listed deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     addCardOpen,
     editCardOpen,
     confirmDeleteOpen,
-    installVoicesOpen,
     exitConfirmOpen,
     sessionDone,
     showAnswer,
     currentCard,
-    resolved,
-    effectiveFrontLang,
-    effectiveBackLang,
     queue.length,
     position,
   ]);
@@ -482,10 +306,7 @@ export const DeckReviewPage = () => {
     front: string;
     back: string;
     tags: string[];
-    ttsLangFront?: string;
-    ttsLangBack?: string;
     example?: string;
-    ttsLangExample?: string;
   }) => {
     if (!deckId) return;
     const now = new Date().toISOString();
@@ -495,10 +316,7 @@ export const DeckReviewPage = () => {
       front: values.front,
       back: values.back,
       tags: values.tags.length ? values.tags : undefined,
-      ttsLangFront: values.ttsLangFront,
-      ttsLangBack: values.ttsLangBack,
       example: values.example,
-      ttsLangExample: values.ttsLangExample,
       dateAdded: now,
       nextReviewDate: now,
     };
@@ -510,20 +328,14 @@ export const DeckReviewPage = () => {
     front: string;
     back: string;
     tags: string[];
-    ttsLangFront?: string;
-    ttsLangBack?: string;
     example?: string;
-    ttsLangExample?: string;
   }) => {
     if (!currentCard) return;
     updateCard(currentCard.id, {
       front: values.front,
       back: values.back,
       tags: values.tags.length ? values.tags : undefined,
-      ttsLangFront: values.ttsLangFront,
-      ttsLangBack: values.ttsLangBack,
       example: values.example,
-      ttsLangExample: values.ttsLangExample,
     });
     toast({ title: t('flashcards.cardUpdated') });
   };
@@ -655,17 +467,7 @@ export const DeckReviewPage = () => {
                 back={resolved.back}
                 example={currentCard?.example}
                 showAnswer={showAnswer}
-                speaking={speaking}
-                showFrontSpeaker={!!effectiveFrontLang}
-                showBackSpeaker={!!effectiveBackLang}
-                showExampleSpeaker={!!effectiveExampleLang && !!currentCard?.example}
-                onSpeakFront={() => speakSide('front')}
-                onSpeakBack={() => speakSide('back')}
-                onSpeakExample={() => speakSide('example')}
-                onStop={ttsCancel}
                 onEdit={() => setEditCardOpen(true)}
-                speakLabel={t('tts.speak')}
-                stopLabel={t('tts.stop')}
                 editLabel={t('flashcards.editCard')}
                 audioFront={resolved.audioFront}
                 audioBack={resolved.audioBack}
@@ -677,34 +479,6 @@ export const DeckReviewPage = () => {
                     <Badge variant="outline" className="text-[10px]">
                       {t('flashcards.front')}
                     </Badge>
-                    {effectiveFrontLang && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => speakSide('front')}
-                          className="h-7 w-7"
-                          aria-label={speaking ? t('tts.replay') : t('tts.speak')}
-                          title={speaking ? t('tts.replay') : t('tts.speak')}
-                        >
-                          <Volume2 className="w-4 h-4" />
-                        </Button>
-                        {speaking && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={ttsCancel}
-                            className="h-7 w-7 text-danger hover:text-danger"
-                            aria-label={t('tts.stop')}
-                            title={t('tts.stop')}
-                          >
-                            <Square className="w-3.5 h-3.5 fill-current" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
                   </div>
                   <div
                     className="prose prose-sm dark:prose-invert max-w-none anki-card-content"
@@ -721,34 +495,6 @@ export const DeckReviewPage = () => {
                         <Badge variant="outline" className="text-[10px] border-success/40 text-success">
                           {t('flashcards.back')}
                         </Badge>
-                        {effectiveBackLang && (
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => speakSide('back')}
-                              className="h-7 w-7"
-                              aria-label={speaking ? t('tts.replay') : t('tts.speak')}
-                              title={speaking ? t('tts.replay') : t('tts.speak')}
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </Button>
-                            {speaking && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={ttsCancel}
-                                className="h-7 w-7 text-danger hover:text-danger"
-                                aria-label={t('tts.stop')}
-                                title={t('tts.stop')}
-                              >
-                                <Square className="w-3.5 h-3.5 fill-current" />
-                              </Button>
-                            )}
-                          </div>
-                        )}
                       </div>
                       <div
                         className="prose prose-sm dark:prose-invert max-w-none anki-card-content"
@@ -834,11 +580,6 @@ export const DeckReviewPage = () => {
         mode="edit"
         initialCard={currentCard}
         onSubmit={handleEditCardSubmit}
-      />
-
-      <InstallVoicesDialog
-        open={installVoicesOpen}
-        onOpenChange={setInstallVoicesOpen}
       />
 
       <AlertDialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
@@ -953,17 +694,7 @@ interface LanguageDeckCardProps {
   back: string;
   example?: string;
   showAnswer: boolean;
-  speaking: boolean;
-  showFrontSpeaker: boolean;
-  showBackSpeaker: boolean;
-  showExampleSpeaker: boolean;
-  onSpeakFront: () => void;
-  onSpeakBack: () => void;
-  onSpeakExample: () => void;
-  onStop: () => void;
   onEdit: () => void;
-  speakLabel: string;
-  stopLabel: string;
   editLabel: string;
   audioFront: string[];
   audioBack: string[];
@@ -993,17 +724,7 @@ const LanguageDeckCard = ({
   back,
   example,
   showAnswer,
-  speaking,
-  showFrontSpeaker,
-  showBackSpeaker,
-  showExampleSpeaker,
-  onSpeakFront,
-  onSpeakBack,
-  onSpeakExample,
-  onStop,
   onEdit,
-  speakLabel,
-  stopLabel,
   editLabel,
   audioFront,
   audioBack,
@@ -1018,31 +739,9 @@ const LanguageDeckCard = ({
               <BookOpen className="w-16 h-16 text-orange-500" strokeWidth={1.6} />
             </div>
             <div className="flex items-center gap-2 text-base">
-              {showFrontSpeaker && (
-                <button
-                  type="button"
-                  onClick={onSpeakFront}
-                  className="text-sky-400 hover:text-sky-500 transition-colors"
-                  aria-label={speakLabel}
-                  title={speakLabel}
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              )}
               <span className="font-medium">{renderHeadword(front)}</span>
             </div>
             <div className="mt-2 flex items-center justify-center gap-2">
-              {showBackSpeaker && (
-                <button
-                  type="button"
-                  onClick={onSpeakBack}
-                  className="text-sky-400 hover:text-sky-500 transition-colors"
-                  aria-label={speakLabel}
-                  title={speakLabel}
-                >
-                  <Volume2 className="w-5 h-5" />
-                </button>
-              )}
               <div
                 className="text-2xl font-semibold anki-card-content"
                 dangerouslySetInnerHTML={{ __html: sanitizeCardHtml(back) }}
@@ -1055,17 +754,6 @@ const LanguageDeckCard = ({
               <>
                 <div className="my-5 w-3/4 border-t border-dashed border-border" />
                 <div className="flex items-start justify-center gap-2 text-sm text-muted-foreground max-w-sm">
-                  {showExampleSpeaker && (
-                    <button
-                      type="button"
-                      onClick={onSpeakExample}
-                      className="text-sky-400 hover:text-sky-500 transition-colors mt-0.5 shrink-0"
-                      aria-label={speakLabel}
-                      title={speakLabel}
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                  )}
                   <span
                     className="leading-snug"
                     dangerouslySetInnerHTML={{ __html: highlightExample(example, front) }}
@@ -1082,33 +770,11 @@ const LanguageDeckCard = ({
             >
               <Pencil className="w-5 h-5" />
             </button>
-            {speaking && (
-              <button
-                type="button"
-                onClick={onStop}
-                className="mt-2 text-danger inline-flex items-center gap-1 text-xs"
-                aria-label={stopLabel}
-                title={stopLabel}
-              >
-                <Square className="w-3 h-3 fill-current" /> {stopLabel}
-              </button>
-            )}
           </>
         ) : (
           // ---------- FRONT ----------
           <>
             <div className="flex items-center gap-3 text-2xl sm:text-3xl">
-              {showFrontSpeaker && (
-                <button
-                  type="button"
-                  onClick={onSpeakFront}
-                  className="text-sky-400 hover:text-sky-500 transition-colors"
-                  aria-label={speakLabel}
-                  title={speakLabel}
-                >
-                  <Volume2 className="w-6 h-6" />
-                </button>
-              )}
               <span className="font-medium">{renderHeadword(front)}</span>
             </div>
             {audioFront.map((url, i) => (
@@ -1119,17 +785,6 @@ const LanguageDeckCard = ({
                 className="mt-4 text-sm text-muted-foreground max-w-sm leading-snug"
                 dangerouslySetInnerHTML={{ __html: highlightExample(example, front) }}
               />
-            )}
-            {speaking && (
-              <button
-                type="button"
-                onClick={onStop}
-                className="mt-3 text-danger inline-flex items-center gap-1 text-xs"
-                aria-label={stopLabel}
-                title={stopLabel}
-              >
-                <Square className="w-3 h-3 fill-current" /> {stopLabel}
-              </button>
             )}
           </>
         )}

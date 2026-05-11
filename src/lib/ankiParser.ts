@@ -105,10 +105,7 @@ export const parseTextOrCsv = async (
     front: r.front,
     back: r.back,
     tags: r.tags,
-    ttsLangFront: r.langFront,
-    ttsLangBack: r.langBack,
     example: r.example,
-    ttsLangExample: r.langExample,
     dateAdded: now,
     nextReviewDate: now,
   }));

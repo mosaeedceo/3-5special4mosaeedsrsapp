@@ -9,14 +9,12 @@ import { DisplayModeSelector } from '@/components/DisplayModeSelector';
 import { DebugStorageDialog } from '@/components/DebugStorageDialog';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { SessionHistory } from '@/components/SessionHistory';
-import { Settings, Download, Upload, Sun, Moon, Monitor, Palette, LayoutGrid, Bug, Brain, GraduationCap, Paperclip, Languages, Clock, History, BookOpen, ChevronRight, ChevronLeft, Bell, BellOff, Volume2, ShieldAlert } from 'lucide-react';
+import { Settings, Download, Upload, Sun, Moon, Monitor, Palette, LayoutGrid, Bug, Brain, GraduationCap, Paperclip, Languages, Clock, History, BookOpen, ChevronRight, ChevronLeft, Bell, BellOff, ShieldAlert } from 'lucide-react';
 import {
   scheduleDailyReminder,
   cancelReminder,
   requestReminderPermission,
 } from '@/lib/reminders';
-import { InstallVoicesDialog } from '@/components/InstallVoicesDialog';
-import { isInstallSupported } from '@/lib/ttsInstaller';
 import { useNavigate } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -28,7 +26,6 @@ import { ColorTheme, DisplayMode } from '@/types/lesson';
 export const SettingsPage = () => {
   const { data, updateSettings, exportData, importData, getTodayDueCount } = useLocalStorage();
   const [isExporting, setIsExporting] = useState(false);
-  const [installVoicesOpen, setInstallVoicesOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { containerClass } = useDisplayMode(data.settings.displayMode);
   const { t, isRTL } = useTranslation();
@@ -457,28 +454,15 @@ export const SettingsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Study & Audio (TTS voices + leech threshold) */}
+        {/* Study settings (leech threshold) */}
         <Card className="animate-fade-in" style={{ animationDelay: '0.27s' }}>
           <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
             <div className="flex items-center gap-2">
-              <Volume2 className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
+              <ShieldAlert className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
               <CardTitle className="font-heading text-base sm:text-lg">{t('settings.studyAndAudio')}</CardTitle>
             </div>
-            <CardDescription className="text-xs sm:text-sm">
-              {isInstallSupported() ? t('tts.installVoicesDesc') : t('tts.webHint')}
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-5">
-            {isInstallSupported() && (
-              <Button
-                onClick={() => setInstallVoicesOpen(true)}
-                variant="outline"
-                className="w-full min-h-[44px] text-sm"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {t('tts.installVoices')}
-              </Button>
-            )}
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
@@ -539,8 +523,6 @@ export const SettingsPage = () => {
             )}
           </CardContent>
         </Card>
-
-        <InstallVoicesDialog open={installVoicesOpen} onOpenChange={setInstallVoicesOpen} />
 
         {/* Study Reminders */}
         <Card className="animate-fade-in" style={{ animationDelay: '0.28s' }}>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, Volume2, BookOpen, Pause } from 'lucide-react';
+import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, Volume2, BookOpen, Pause, Settings2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -243,10 +243,7 @@ export const FlashcardsPage = () => {
     front: string;
     back: string;
     tags: string[];
-    ttsLangFront?: string;
-    ttsLangBack?: string;
     example?: string;
-    ttsLangExample?: string;
   }) => {
     if (!addCardTargetDeckId) return;
     const now = new Date().toISOString();
@@ -256,10 +253,7 @@ export const FlashcardsPage = () => {
       front: values.front,
       back: values.back,
       tags: values.tags.length ? values.tags : undefined,
-      ttsLangFront: values.ttsLangFront,
-      ttsLangBack: values.ttsLangBack,
       example: values.example,
-      ttsLangExample: values.ttsLangExample,
       dateAdded: now,
       nextReviewDate: now,
     };
@@ -299,10 +293,7 @@ export const FlashcardsPage = () => {
       front: r.front,
       back: r.back,
       tags: r.tags && r.tags.length ? r.tags : undefined,
-      ttsLangFront: r.langFront,
-      ttsLangBack: r.langBack,
       example: r.example,
-      ttsLangExample: r.langExample,
       dateAdded: now,
       nextReviewDate: now,
     }));
@@ -536,8 +527,8 @@ export const FlashcardsPage = () => {
                           {t('flashcards.manageCards')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setSettingsDeck(deck)}>
-                          <Volume2 className="w-4 h-4 mr-2" />
-                          {t('tts.deckSettings')}
+                          <Settings2 className="w-4 h-4 mr-2" />
+                          {t('deckSettings.title')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setRenameTarget({ id: deck.id, name: deck.name })}>
                           <Pencil className="w-4 h-4 mr-2" />
@@ -729,7 +720,7 @@ export const FlashcardsPage = () => {
         />
       )}
 
-      {/* Deck settings (TTS, daily limits, FSRS, easy days, custom study) */}
+      {/* Deck settings (daily limits, FSRS, easy days, custom study) */}
       <DeckSettingsDialog
         open={!!settingsDeck}
         onOpenChange={open => !open && setSettingsDeck(null)}

@@ -106,7 +106,6 @@ export interface Settings {
    * Default: false (toast is shown).
    */
   quietLeechNotifications?: boolean;
-  lastTtsVoiceByLang?: Record<string, string>; // BCP-47 lang -> last picked voiceURI
   lastReviewedDeckId?: string; // Last deck the user reviewed (for FAB's "Add card" default)
   /**
    * One-shot data migrations that have already run on this user's data.
@@ -147,14 +146,9 @@ export interface Card {
   reviewHistory?: ReviewHistoryEntry[];
   dateAdded: string;
   suspended?: boolean;
-  // Optional per-card TTS language override (BCP-47, e.g. "de-DE").
-  // When set, takes precedence over auto-detection and the deck default.
-  ttsLangFront?: string;
-  ttsLangBack?: string;
   // Optional per-card example sentence shown beneath the front/back content.
   // Useful for language decks (target word + example sentence).
   example?: string;
-  ttsLangExample?: string;
 }
 
 export type EasyDayLevel = 'min' | 'reduced' | 'normal';
@@ -195,13 +189,6 @@ export interface Deck {
   // -- Easy Days: per-weekday review-load scaling (Mon..Sun) --
   easyDays?: EasyDayLevel[];           // length 7 when set
   source?: 'anki' | 'csv' | 'manual';
-  // Text-to-speech preferences (optional, per-deck)
-  ttsFrontLang?: string;     // BCP-47 e.g. "de-DE"; empty/undefined = disabled
-  ttsBackLang?: string;
-  ttsFrontVoiceURI?: string; // Optional specific voice
-  ttsBackVoiceURI?: string;
-  ttsAutoPlay?: boolean;
-  ttsRate?: number;          // 0.5 - 1.5, default 1.0
 }
 
 export interface AppData {

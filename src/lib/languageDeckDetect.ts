@@ -19,22 +19,20 @@ const wordCount = (s: string): number => {
  * Heuristic: does this deck look like a vocabulary / language-learning deck?
  *
  * Signals (any one is enough):
- *  - Deck has a configured TTS language (front or back).
  *  - A meaningful share of cards (>= 30%) carry an `example` sentence —
  *    the dedicated example field is almost exclusively used for vocab.
  *  - Most cards (>= 70%) have a short front (1-3 words / <= 24 chars) AND
  *    a back that's also reasonably short (<= 8 words). This catches the
  *    classic "term -> translation" vocab card shape, including imported
- *    Anki decks that never had TTS configured.
+ *    Anki decks.
  *
  * Returns false for empty decks so the original layout stays the default
  * until there's evidence either way.
  */
 export const looksLikeLanguageDeck = (
-  deck: Pick<Deck, 'ttsFrontLang' | 'ttsBackLang'> | null | undefined,
+  _deck: Deck | null | undefined,
   cards: Pick<Card, 'front' | 'back' | 'example' | 'isCloze'>[],
 ): boolean => {
-  if (deck?.ttsFrontLang || deck?.ttsBackLang) return true;
   if (!cards || cards.length === 0) return false;
 
   const usable = cards.filter(c => !c.isCloze);

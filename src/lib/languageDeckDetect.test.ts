@@ -13,12 +13,7 @@ const card = (front: string, back: string, extra: Partial<Card> = {}): Card => (
 });
 
 describe('looksLikeLanguageDeck', () => {
-  it('returns true when deck has a configured TTS language', () => {
-    const deck = { ttsFrontLang: 'de-DE' } as Deck;
-    expect(looksLikeLanguageDeck(deck, [])).toBe(true);
-  });
-
-  it('returns false for an empty deck without TTS', () => {
+  it('returns false for an empty deck with no cards', () => {
     expect(looksLikeLanguageDeck({}, [])).toBe(false);
   });
 

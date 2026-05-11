@@ -1,16 +1,16 @@
 /**
- * Lightweight, script-based language auto-detection for TTS.
+ * Lightweight, script-based language auto-detection.
  *
- * Returns a BCP-47 tag (matching one of the PRESET_TTS_LANGS where possible)
- * when we are reasonably confident, otherwise `null` so callers can fall back
- * to the deck default. We err on the side of returning `null` for ambiguous
- * Latin-script text to avoid mispronouncing a deck-wide default.
+ * Returns a BCP-47 tag when we are reasonably confident, otherwise `null`
+ * so callers can fall back gracefully. We err on the side of returning `null`
+ * for ambiguous Latin-script text.
  */
 
-import { stripHtmlForSpeech } from './tts';
+const stripHtml = (raw: string): string =>
+  raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
 export const detectLanguage = (raw: string): string | null => {
-  const text = stripHtmlForSpeech(raw);
+  const text = stripHtml(raw);
   if (!text) return null;
 
   // Non-Latin scripts → unambiguous.

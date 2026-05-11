@@ -168,10 +168,7 @@ export const CardManagerDialog = ({
     front: string;
     back: string;
     tags: string[];
-    ttsLangFront?: string;
-    ttsLangBack?: string;
     example?: string;
-    ttsLangExample?: string;
   }) => {
     if (editorMode === 'create') {
       const now = new Date().toISOString();
@@ -181,10 +178,7 @@ export const CardManagerDialog = ({
         front: values.front,
         back: values.back,
         tags: values.tags.length ? values.tags : undefined,
-        ttsLangFront: values.ttsLangFront,
-        ttsLangBack: values.ttsLangBack,
         example: values.example,
-        ttsLangExample: values.ttsLangExample,
         dateAdded: now,
         nextReviewDate: now,
       };
@@ -195,10 +189,7 @@ export const CardManagerDialog = ({
         front: values.front,
         back: values.back,
         tags: values.tags.length ? values.tags : undefined,
-        ttsLangFront: values.ttsLangFront,
-        ttsLangBack: values.ttsLangBack,
         example: values.example,
-        ttsLangExample: values.ttsLangExample,
       });
       toast({ title: t('flashcards.cardUpdated') });
     }
@@ -235,10 +226,7 @@ export const CardManagerDialog = ({
       front: r.front,
       back: r.back,
       tags: r.tags && r.tags.length ? r.tags : undefined,
-      ttsLangFront: r.langFront,
-      ttsLangBack: r.langBack,
       example: r.example,
-      ttsLangExample: r.langExample,
       dateAdded: now,
       nextReviewDate: now,
     }));
