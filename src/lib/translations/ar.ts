@@ -128,6 +128,10 @@ export const ar: TranslationKeys = {
     fabBulkAdd: 'إضافة بطاقات دفعة واحدة',
     fabNewDeck: 'رزمة جديدة',
     pickDeckPrompt: 'اختر رزمة',
+    exportDeck: 'تصدير رزمة',
+    exportSuccess: 'تم تصدير {count} بطاقة من "{deck}"',
+    exportFailed: 'فشل التصدير',
+    exportPickDeck: 'اختر رزمة للتصدير',
   },
 
   // إعدادات الرزمة لكل رزمة (مقسّمة إلى أقسام: الحدود اليومية، FSRS، الأيام السهلة، الدراسة المخصّصة)

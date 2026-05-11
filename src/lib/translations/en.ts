@@ -126,6 +126,10 @@ export const en = {
     fabBulkAdd: 'Bulk add cards',
     fabNewDeck: 'New deck',
     pickDeckPrompt: 'Choose a deck',
+    exportDeck: 'Export Deck',
+    exportSuccess: 'Exported {count} cards from "{deck}"',
+    exportFailed: 'Export failed',
+    exportPickDeck: 'Choose a deck to export',
   },
 
   // Per-deck settings dialog (sectioned: daily limits, FSRS, easy days, custom study)

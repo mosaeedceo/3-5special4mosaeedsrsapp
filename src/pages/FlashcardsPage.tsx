@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Layers, Upload, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, BookOpen, Pause, Settings2 } from 'lucide-react';
+import { Layers, Upload, Download, Play, Pencil, Trash2, MoreVertical, FileText, Plus, ListChecks, ClipboardPaste, BookOpen, Pause, Settings2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -121,6 +121,48 @@ export const FlashcardsPage = () => {
   }, [decks, stats]);
 
   const handleImportClick = () => fileInputRef.current?.click();
+
+  const stripHtml = (html: string) =>
+    html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim();
+
+  const handleExportDeck = async (deck: { id: string; name: string }) => {
+    try {
+      const cards = getDeckCards(deck.id);
+      const rows = cards.map(c => {
+        const front = stripHtml(c.front || '');
+        const back = stripHtml(c.back || '');
+        const tags = (c.tags || []).join(' ');
+        return [front, back, tags].join('\t');
+      });
+      const csv = rows.join('\n');
+      const filename = deck.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '') + '.csv';
+      const { isNativePlatform } = await import('@/lib/platform');
+      if (isNativePlatform()) {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+        await Filesystem.writeFile({
+          path: filename,
+          data: csv,
+          directory: Directory.Cache,
+          encoding: 'utf8' as never,
+        });
+        const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
+        await Share.share({ title: filename, url: uri, dialogTitle: 'Save or Share Deck' });
+      } else {
+        const blob = new Blob([csv], { type: 'text/tab-separated-values' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      toast({ title: t('flashcards.exportSuccess', { count: cards.length, deck: deck.name }) });
+    } catch (err: any) {
+      console.error('[FlashcardsPage] export error', err);
+      toast({ title: t('flashcards.exportFailed'), description: err?.message || String(err), variant: 'destructive' });
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -339,14 +381,35 @@ export const FlashcardsPage = () => {
               <Plus className="w-4 h-4 mr-1.5" />
               {t('flashcards.newDeck')}
             </Button>
-            <Button
-              size="sm"
-              onClick={handleImportClick}
-              disabled={importing}
-            >
-              <Upload className="w-4 h-4 mr-1.5" />
-              {importing ? t('flashcards.importing') : t('flashcards.importDeck')}
-            </Button>
+            {decks.length === 0 ? null : decks.length === 1 ? (
+              <Button
+                size="sm"
+                onClick={() => handleExportDeck(decks[0])}
+              >
+                <Download className="w-4 h-4 mr-1.5" />
+                {t('flashcards.exportDeck')}
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm">
+                    <Download className="w-4 h-4 mr-1.5" />
+                    {t('flashcards.exportDeck')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                  <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {t('flashcards.exportPickDeck')}
+                  </div>
+                  {decks.map(deck => (
+                    <DropdownMenuItem key={deck.id} onClick={() => handleExportDeck(deck)}>
+                      <Layers className="w-4 h-4 mr-2 text-muted-foreground" />
+                      {deck.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
