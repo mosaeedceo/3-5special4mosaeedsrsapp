@@ -148,7 +148,7 @@ export const FlashcardsPage = () => {
           encoding: Encoding.UTF8,
         });
         const fileUri = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
-        await Share.share({ title: filename, files: [fileUri.uri], dialogTitle: 'Save or Share Deck' });
+        await Share.share({ title: filename, files: [fileUri.uri], dialogTitle: t('flashcards.exportDeck') });
       } else {
         const blob = new Blob([csv], { type: 'text/tab-separated-values' });
         const url = URL.createObjectURL(blob);
