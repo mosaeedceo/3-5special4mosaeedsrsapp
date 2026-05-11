@@ -51,7 +51,7 @@ export const BrowsePage = () => {
       {view === 'library' ? <LibraryPage inBrowse /> : <CategoriesPage inBrowse />}
 
       {/* Floating Library / Categories toggle */}
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed bottom-28 md:bottom-32 lg:bottom-24 left-1/2 -translate-x-1/2 z-40">
         <div className="flex items-center bg-card border border-border shadow-lg rounded-full p-1 gap-1 md:p-1.5 md:gap-1.5 lg:p-1 lg:gap-1">
           <button
             type="button"
