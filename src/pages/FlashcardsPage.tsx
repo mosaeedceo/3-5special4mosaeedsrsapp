@@ -665,7 +665,7 @@ export const FlashcardsPage = () => {
                   })()}
 
                   <Button
-                    className="w-full mt-auto pt-0 h-9"
+                    className="w-full h-9 pt-[8px] mt-[8px] mb-[8px]"
                     variant={s.due > 0 || s.isNew > 0 ? 'default' : 'outline'}
                     disabled={s.total === 0}
                     onClick={() => navigate(`/flashcards/${deck.id}/review`)}
