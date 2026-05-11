@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-export const LibraryPage = () => {
+export const LibraryPage = ({ inBrowse }: { inBrowse?: boolean } = {}) => {
   const {
     data,
     addLesson,
@@ -300,7 +300,7 @@ export const LibraryPage = () => {
   }, [data.lessons, data.categoryData, searchQuery, categoryFilter, difficultyFilter, statusFilter, tagFilter, sortBy]);
 
   return (
-    <div className="min-h-screen bg-background pb-safe animate-fade-in">
+    <div className={cn('min-h-screen bg-background pb-safe animate-fade-in', inBrowse && 'pb-28')}>
       {/* Header */}
       <header className="bg-card border-b border-border px-4 pt-8 pb-4">
         <div className={cn(containerClass, 'mx-auto')}>

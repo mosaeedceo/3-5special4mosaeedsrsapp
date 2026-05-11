@@ -21,7 +21,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-export const CategoriesPage = () => {
+export const CategoriesPage = ({ inBrowse }: { inBrowse?: boolean } = {}) => {
   const { 
     data, 
     addLesson, 
@@ -130,7 +130,7 @@ export const CategoriesPage = () => {
   const categories = Object.keys(lessonsByCategory);
 
   return (
-    <div className="min-h-screen bg-background pb-safe animate-fade-in">
+    <div className={cn('min-h-screen bg-background pb-safe animate-fade-in', inBrowse && 'pb-28')}>
       {/* Header */}
       <header className="bg-card border-b border-border px-4 pt-8 pb-4">
         <div className={cn(containerClass, 'mx-auto')}>

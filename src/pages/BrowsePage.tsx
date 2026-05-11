@@ -174,7 +174,7 @@ export const BrowsePage = () => {
         </div>
       )}
 
-      {view === 'library' ? <LibraryPage /> : <CategoriesPage />}
+      {view === 'library' ? <LibraryPage inBrowse /> : <CategoriesPage inBrowse />}
 
       {/* Floating Library / Categories toggle */}
       <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
