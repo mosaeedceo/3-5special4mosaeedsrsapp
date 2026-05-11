@@ -187,7 +187,6 @@ export const en = {
     exitConfirmDesc: 'Your progress on rated cards is saved. Cards you haven\'t rated yet will reappear next time.',
     exitConfirm: 'Leave',
     stay: 'Keep reviewing',
-    shortcutsHint: 'Tip: press Space to flip the card, 1–4 to rate, Esc to exit.',
   },
 
   // Accessibility labels for icon-only buttons

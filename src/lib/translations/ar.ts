@@ -189,7 +189,6 @@ export const ar: TranslationKeys = {
     exitConfirmDesc: 'تم حفظ تقدمك على البطاقات التي قيّمتها. البطاقات التي لم تقيّمها بعد ستظهر مرة أخرى في المرة القادمة.',
     exitConfirm: 'خروج',
     stay: 'متابعة المراجعة',
-    shortcutsHint: 'نصيحة: اضغط مسافة لقلب البطاقة، 1–4 للتقييم، Esc للخروج.',
   },
 
   // Accessibility labels for icon-only buttons
