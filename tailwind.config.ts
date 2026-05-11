@@ -93,6 +93,9 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      spacing: {
+        "floating-clearance": "7rem",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

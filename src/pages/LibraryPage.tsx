@@ -300,7 +300,7 @@ export const LibraryPage = ({ inBrowse }: { inBrowse?: boolean } = {}) => {
   }, [data.lessons, data.categoryData, searchQuery, categoryFilter, difficultyFilter, statusFilter, tagFilter, sortBy]);
 
   return (
-    <div className={cn('min-h-screen bg-background pb-safe animate-fade-in', inBrowse && 'pb-28')}>
+    <div className={cn('min-h-screen bg-background pb-safe animate-fade-in', inBrowse && 'pb-floating-clearance')}>
       {/* Header */}
       <header className="bg-card border-b border-border px-4 pt-8 pb-4">
         <div className={cn(containerClass, 'mx-auto')}>
