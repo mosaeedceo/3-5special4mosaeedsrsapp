@@ -52,12 +52,12 @@ export const BrowsePage = () => {
 
       {/* Floating Library / Categories toggle */}
       <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
-        <div className="flex items-center bg-card border border-border shadow-lg rounded-full p-1 gap-1">
+        <div className="flex items-center bg-card border border-border shadow-lg rounded-full p-1 gap-1 md:p-1.5 md:gap-1.5 lg:p-1 lg:gap-1">
           <button
             type="button"
             onClick={() => handleChange('library')}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors',
+              'flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full text-sm font-medium transition-colors',
               view === 'library'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground',
@@ -70,7 +70,7 @@ export const BrowsePage = () => {
             type="button"
             onClick={() => handleChange('categories')}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors',
+              'flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full text-sm font-medium transition-colors',
               view === 'categories'
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground',

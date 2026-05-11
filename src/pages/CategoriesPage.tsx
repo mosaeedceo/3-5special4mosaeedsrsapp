@@ -132,7 +132,7 @@ export const CategoriesPage = ({ inBrowse }: { inBrowse?: boolean } = {}) => {
   return (
     <div className={cn('min-h-screen bg-background pb-safe animate-fade-in', inBrowse && 'pb-floating-clearance')}>
       {/* Header */}
-      <header className="bg-card border-b border-border px-4 pt-4 pb-2">
+      <header className="bg-card border-b border-border px-4 pt-4 pb-2 md:pt-6 md:pb-4 lg:pt-8 lg:pb-4">
         <div className={cn(containerClass, 'mx-auto')}>
           <div className="flex items-center gap-2 mb-1">
             <FolderOpen className="w-4 h-4 text-primary" />
