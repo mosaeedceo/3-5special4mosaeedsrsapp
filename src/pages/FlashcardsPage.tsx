@@ -866,6 +866,12 @@ export const FlashcardsPage = () => {
           icon: <Layers className="w-4 h-4" />,
           onSelect: () => setCreateDeckOpen(true),
         });
+        baseActions.push({
+          key: 'import-deck',
+          label: t('flashcards.importDeck'),
+          icon: <Upload className="w-4 h-4" />,
+          onSelect: handleImportClick,
+        });
 
         return (
           <FloatingAddButton
