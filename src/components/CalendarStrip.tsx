@@ -100,7 +100,7 @@ export const CalendarStrip = ({
 
       <div
         ref={scrollRef}
-        className="flex gap-1.5 overflow-x-auto px-6 pb-1 no-scrollbar scroll-smooth"
+        className="flex gap-1.5 overflow-x-auto px-6 pb-1 no-scrollbar scroll-smooth pt-[4px]"
         style={{ scrollBehavior: 'smooth' }}
       >
         {days.map((day, index) => {
