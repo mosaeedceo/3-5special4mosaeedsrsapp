@@ -181,9 +181,8 @@ export const DeckReviewPage = () => {
         prev.includes(suspendedId) ? prev : [...prev, suspendedId],
       );
       if (data.settings.quietLeechNotifications) {
-        // Quiet mode: show a brief, non-interruptive inline hint above the
-        // rating buttons that fades after a few seconds. The full list is
-        // surfaced on the session-done card.
+        // Quiet mode: show a short reminder above the rating buttons.
+        // It fades after a few seconds; the full list appears on the session-done card.
         setLeechHint(true);
         if (leechHintTimerRef.current !== null) {
           window.clearTimeout(leechHintTimerRef.current);
