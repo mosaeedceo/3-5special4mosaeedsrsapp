@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Library, GraduationCap, Layers, Search, X } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -122,18 +121,6 @@ export const BrowsePage = () => {
             )}
           </div>
 
-          <Tabs value={view} onValueChange={handleChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="library" className="gap-2">
-                <Library className="w-4 h-4" />
-                <span>{t('nav.library')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="categories" className="gap-2">
-                <GraduationCap className="w-4 h-4" />
-                <span>{t('nav.categories')}</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
       </div>
 
@@ -188,6 +175,38 @@ export const BrowsePage = () => {
       )}
 
       {view === 'library' ? <LibraryPage /> : <CategoriesPage />}
+
+      {/* Floating Library / Categories toggle */}
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
+        <div className="flex items-center bg-card border border-border shadow-lg rounded-full p-1 gap-1">
+          <button
+            type="button"
+            onClick={() => handleChange('library')}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors',
+              view === 'library'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Library className="w-4 h-4" />
+            <span>{t('nav.library')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleChange('categories')}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors',
+              view === 'categories'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <GraduationCap className="w-4 h-4" />
+            <span>{t('nav.categories')}</span>
+          </button>
+        </div>
+      </div>
 
       {/* Card manager (opened from card-search hits when card is not yet due) */}
       {cardHitDeck && (
