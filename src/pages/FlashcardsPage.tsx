@@ -138,16 +138,16 @@ export const FlashcardsPage = () => {
       const filename = deck.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '') + '.csv';
       const { isNativePlatform } = await import('@/lib/platform');
       if (isNativePlatform()) {
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
         const { Share } = await import('@capacitor/share');
         await Filesystem.writeFile({
           path: filename,
           data: csv,
           directory: Directory.Cache,
-          encoding: 'utf8' as never,
+          encoding: Encoding.UTF8,
         });
-        const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
-        await Share.share({ title: filename, url: uri, dialogTitle: 'Save or Share Deck' });
+        const fileUri = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
+        await Share.share({ title: filename, files: [fileUri.uri], dialogTitle: 'Save or Share Deck' });
       } else {
         const blob = new Blob([csv], { type: 'text/tab-separated-values' });
         const url = URL.createObjectURL(blob);
