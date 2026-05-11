@@ -57,7 +57,7 @@ export const LibraryPage = ({ inBrowse }: { inBrowse?: boolean } = {}) => {
   const SESSION_SORT_KEY = 'library-sort-preference';
   const SESSION_STATUS_KEY = 'library-status-preference';
 
-  // Search query is owned at the BrowsePage level via URL `?q=` so card hits can render above the tabs.
+  // Search query lives in the URL `?q=` param so it survives navigation and can be pre-set by deep links.
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const setSearchQuery = useCallback((v: string) => {

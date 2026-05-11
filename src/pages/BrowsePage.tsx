@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Library, GraduationCap } from 'lucide-react';
-import { useDisplayMode } from '@/hooks/useDisplayMode';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { cn } from '@/lib/utils';
@@ -19,7 +18,6 @@ export const BrowsePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { data } = useLocalStorage();
-  const { containerClass } = useDisplayMode(data.settings.displayMode);
   const { t } = useTranslation();
 
   const viewParam = searchParams.get('view');
