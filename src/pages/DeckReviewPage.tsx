@@ -181,8 +181,9 @@ export const DeckReviewPage = () => {
         prev.includes(suspendedId) ? prev : [...prev, suspendedId],
       );
       if (data.settings.quietLeechNotifications) {
-        // Quiet mode: show a short reminder above the rating buttons.
-        // It fades after a few seconds; the full list appears on the session-done card.
+        // Quiet mode: show a brief, non-interruptive inline hint above the
+        // rating buttons that fades after a few seconds. The full list is
+        // surfaced on the session-done card.
         setLeechHint(true);
         if (leechHintTimerRef.current !== null) {
           window.clearTimeout(leechHintTimerRef.current);
@@ -349,7 +350,7 @@ export const DeckReviewPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 flex flex-col">
+    <div className="min-h-screen bg-background pb-24">
       <header className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-40">
         <div className={cn(containerClass, 'mx-auto px-4 py-3')}>
           <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
@@ -413,7 +414,7 @@ export const DeckReviewPage = () => {
         </div>
       </header>
 
-      <main className={cn(containerClass, 'mx-auto px-4 py-6 flex-1 flex flex-col justify-center')}>
+      <main className={cn(containerClass, 'mx-auto px-4 py-6')}>
         {sessionDone ? (
           <div className="flex flex-col items-center justify-center text-center py-16 gap-4">
             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
