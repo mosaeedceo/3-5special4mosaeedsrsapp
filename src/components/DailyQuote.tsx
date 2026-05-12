@@ -21,7 +21,7 @@ export const DailyQuote = () => {
   const isQuoteArabic = quote.isArabic;
 
   return (
-    <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-4 mb-4">
+    <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-4 mb-4 pb-[8px]">
       <div className={cn(
         'flex gap-3',
         isQuoteArabic && 'flex-row-reverse'
