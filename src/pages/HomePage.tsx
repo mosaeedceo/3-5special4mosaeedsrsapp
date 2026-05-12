@@ -439,7 +439,7 @@ export const HomePage = () => {
 
             {filteredMissed.length > 0 && (
               <section ref={missedSectionRef} className="animate-in slide-in-from-bottom-2 duration-300">
-                <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center justify-between px-1 mb-[6px]">
                   <h2 className="font-heading font-bold text-danger flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
                     {t('home.missedLessons')}
@@ -479,7 +479,7 @@ export const HomePage = () => {
             {/* Past date: reviewed lesson history */}
             {!isSelectedToday && selectedDate < today && (
               <section className="animate-in slide-in-from-bottom-2 duration-300">
-                <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center justify-between px-1 mb-[6px]">
                   <h2 className="font-heading font-bold text-success flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" />
                     {formatDate(selectedDate, { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -527,7 +527,7 @@ export const HomePage = () => {
 
             {filteredToday.length > 0 && (
               <section className="animate-in slide-in-from-bottom-2 duration-500 delay-100">
-                <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center justify-between px-1 mb-[6px]">
                   <h2 className="font-heading font-bold text-primary flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                     {isSelectedToday ? t('home.dueToday') : formatDate(selectedDate, { month: 'short', day: 'numeric' })}
