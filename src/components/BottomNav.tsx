@@ -27,7 +27,7 @@ export const BottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className={cn(
-        'mx-auto flex items-center justify-around py-2 px-4',
+        'mx-auto flex items-center justify-around py-2 px-4 max-w-5xl pt-[0px] pb-[4px]',
         containerClass
       )}>
         {navItems.map(({ icon: Icon, label, path, badge, isActive }) => {
